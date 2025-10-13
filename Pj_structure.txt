@@ -1,0 +1,51 @@
+EbookManager/
+│
+├── src/
+│   └── com/
+│       └── ebookmanager/
+│           ├── main/
+│           │   └── Main.java               # Application entry point
+│           │
+│           ├── view/ (or ui)
+│           │   ├── LoginFrame.java         # GUI for login/registration
+│           │   ├── MainApplicationFrame.java # Main window after login
+│           │   ├── BookListPanel.java      # Panel to display user's books
+│           │   ├── BookReaderPanel.java    # Panel for reading, highlighting
+│           │   └── ... (other UI components)
+│           │
+│           ├── controller/ (or service)
+│           │   ├── AuthController.java     # Handles login, registration logic
+│           │   ├── BookController.java     # Handles book metadata operations
+│           │   └── LibraryController.java    # Manages user's library, progress
+│           │
+│           ├── model/ (or entity)
+│           │   ├── User.java               # Corresponds to 'User' class
+│           │   ├── Book.java               # Corresponds to 'Book' class
+│           │   ├── UserBook.java           # Corresponds to 'UserBooks' class
+│           │   ├── Highlight.java          # Corresponds to 'Highlight' class
+│           │   └── Note.java               # Corresponds to 'Note' class
+│           │
+│           ├── dao/
+│           │   ├── UserDAO.java            # Handles database operations for User
+│           │   ├── BookDAO.java            # Handles database operations for Book
+│           │   ├── UserBookDAO.java        # Handles database operations for UserBook
+│           │   └── HighlightDAO.java       # Handles database operations for Highlight/Note
+│           │
+│           ├── db/
+│           │   └── DatabaseConnector.java  # Manages MySQL connection
+│           │
+│           └── util/
+│               └── PasswordHasher.java     # Utility for hashing passwords
+│
+├── lib/
+│   └── mysql-connector-j-8.x.x.jar   # MySQL JDBC Driver
+│
+├── resources/
+│   ├── icons/                          # Application icons
+│   │   ├── app_icon.png
+│   │   └── ...
+│   └── config.properties               # Database connection settings
+│
+└── db_schema/
+    └── schema.sql                      # SQL script to create the database tables
+
