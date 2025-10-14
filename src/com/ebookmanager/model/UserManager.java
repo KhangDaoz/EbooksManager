@@ -63,4 +63,14 @@ public class UserManager {
             currentUser = null;
         }
     }
+
+    public boolean changePassword(String old_password, String new_password) {
+        if(currentUser != null && currentUser.getHashed_password().equals(hashedPassword(old_password))) {
+            String new_hashed_password = hashedPassword(new_password);
+            userDAO.updateUserPassword(currentUser.getUser_id(), new_hashed_password);
+            currentUser.setHashed_password(new_hashed_password);
+            return true;
+        }
+        return false;
+    }
 }

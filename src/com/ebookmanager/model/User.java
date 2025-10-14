@@ -39,8 +39,5 @@ public class User {
 
     public void setHashed_password(String hashed_password) {
         this.hashed_password = hashed_password;
-    }
-
-    
-    
+    } 
 }
