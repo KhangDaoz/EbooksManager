@@ -19,10 +19,14 @@ class ReadingProgress{
 public class UserBook {
     private ArrayList<Book> books;
     private ArrayList<Highlight> highlights;
-
-    // Setters
-    public void addHighlight(int startPos, int endPos)
-    {
-        
+    
+    // Getters
+    public ArrayList<Book> getBooks() {
+        return books;
     }
+    public ArrayList<Highlight> getHighlights() {
+        return highlights;
+    }
+    
+    
 }
