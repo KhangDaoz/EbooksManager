@@ -15,7 +15,7 @@ public class UserDAO {
     }
 
     public void addUser(User user) {
-        String sql = "INSERT INTO users (user_name, hashed_password) VALUES (?, ?);";
+        String sql = "INSERT INTO user (user_name, hashed_password) VALUES (?, ?);";
         try(PreparedStatement query = connection.prepareStatement(sql)) {
             query.setString(1, user.getUser_name());
             query.setString(2, user.getHashed_password());
@@ -26,7 +26,7 @@ public class UserDAO {
     }
 
     public User findUserByName(String user_name) {
-        String sql = "SELECT * FROM users WHERE user_name = ?;";
+        String sql = "SELECT * FROM user WHERE user_name = ?;";
         try(PreparedStatement query = connection.prepareStatement(sql)) {
             query.setString(1, user_name);
             ResultSet res = query.executeQuery();
@@ -44,7 +44,7 @@ public class UserDAO {
     }
 
     public void deleteUser(int user_id) {
-        String sql = "DELETE FROM users WHERE user_id = ?;";
+        String sql = "DELETE FROM user WHERE user_id = ?;";
         try(PreparedStatement query = connection.prepareStatement(sql)) {
             query.setInt(1, user_id);
             query.executeUpdate();
@@ -54,7 +54,7 @@ public class UserDAO {
     }
 
     public void updateUserPassword(int user_id, String new_hashed_password) {
-        String sql = "UPDATE users SET hashed_password = ? WHERE user_id = ?;";
+        String sql = "UPDATE user SET hashed_password = ? WHERE user_id = ?;";
         try(PreparedStatement query = connection.prepareStatement(sql)) {
             query.setString(1, new_hashed_password);
             query.setInt(2, user_id);
