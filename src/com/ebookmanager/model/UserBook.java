@@ -10,6 +10,12 @@ public class UserBook {
     private String date_added;
     private float reading_progress;
     
+
+    public UserBook(String user_id, String date_added)
+    {
+        this.user_id = user_id;
+        this.date_added = date_added;
+    }
     public ArrayList<Book> getBooks() {
         return books;
     }

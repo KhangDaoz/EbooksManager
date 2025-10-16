@@ -12,7 +12,7 @@ public class getProgressDAO {
     {
         String sql = "SELECT reading_progress FROM user_books"
         + "WHERE user_id=" + user.getUser_id()
-        +"and book_id=" + book.getBookId() + ";";
+        +" and book_id=" + book.getBookId() + " ;";
         try
         (
             Connection conn = DatabaseConnector.getConnection();
