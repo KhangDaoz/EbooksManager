@@ -1,14 +1,17 @@
 package com.ebookmanager.model;
 
 import java.nio.charset.StandardCharsets;
-
 import java.security.MessageDigest;
-
 import com.ebookmanager.dao.UserDAO;
 
 public class UserManager {
     private UserDAO userDAO;
     private User currentUser;
+
+    public UserManager(UserDAO userDAO) {
+        this.userDAO = userDAO;
+        this.currentUser = null;
+    }
 
     private static String hashedPassword(String password) {
         try {
@@ -26,10 +29,6 @@ public class UserManager {
         }
     }
 
-    public UserManager(UserDAO userDAO) {
-        this.userDAO = userDAO;
-        this.currentUser = null;
-    }
 
     public boolean register(String user_name, String password) {
         if(userDAO.findUserByName(user_name) != null) {
@@ -40,9 +39,9 @@ public class UserManager {
         return true;
     }
 
-    public boolean login(String user_name, String hashed_password) {
+    public boolean login(String user_name, String password) {
         User user = userDAO.findUserByName(user_name);
-        if(user != null && user.getHashed_password().equals(hashed_password)) {
+        if(user != null && user.getHashed_password().equals(hashedPassword(password))) {
             currentUser = user;
             return true;
         }
