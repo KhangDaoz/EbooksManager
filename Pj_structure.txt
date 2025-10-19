@@ -1,51 +1,74 @@
-EbookManager/
+EbookManager-Client/
 │
 ├── src/
 │   └── com/
 │       └── ebookmanager/
-│           ├── main/
-│           │   └── Main.java               # Application entry point
-│           │
-│           ├── view/ (or ui)
-│           │   ├── LoginFrame.java         # GUI for login/registration
-│           │   ├── MainApplicationFrame.java # Main window after login
-│           │   ├── BookListPanel.java      # Panel to display user's books
-│           │   ├── BookReaderPanel.java    # Panel for reading, highlighting
-│           │   └── ... (other UI components)
-│           │
-│           ├── controller/ (or service)
-│           │   ├── AuthController.java     # Handles login, registration logic
-│           │   ├── BookController.java     # Handles book metadata operations
-│           │   └── LibraryController.java    # Manages user's library, progress
-│           │
-│           ├── model/ (or entity)
-│           │   ├── User.java               # Corresponds to 'User' class
-│           │   ├── Book.java               # Corresponds to 'Book' class
-│           │   ├── UserBook.java           # Corresponds to 'UserBooks' class
-│           │   ├── Highlight.java          # Corresponds to 'Highlight' class
-│           │   └── Note.java               # Corresponds to 'Note' class
-│           │
-│           ├── dao/
-│           │   ├── UserDAO.java            # Handles database operations for User
-│           │   ├── BookDAO.java            # Handles database operations for Book
-│           │   ├── UserBookDAO.java        # Handles database operations for UserBook
-│           │   └── HighlightDAO.java       # Handles database operations for Highlight/Note
-│           │
-│           ├── db/
-│           │   └── DatabaseConnector.java  # Manages MySQL connection
-│           │
-│           └── util/
-│               └── PasswordHasher.java     # Utility for hashing passwords
+│           └── client/
+│               ├── main/
+│               │   └── Main.java           # Client application entry point
+│               │
+│               ├── view/ (or ui)
+│               │   ├── LoginFrame.java
+│               │   ├── MainApplicationFrame.java
+│               │   └── ... (all Swing components)
+│               │
+│               ├── net/
+│               │   └── ApiClient.java      # Handles all network requests to the Server
+│               │
+│               └── dto/ (Data Transfer Objects)
+│                   ├── UserDTO.java        # Simplified objects for data exchange
+│                   ├── BookDTO.java
+│                   └── ...
+│
+└── resources/
+    └── icons/
+        └── app_icon.png
+
+
+
+EbookManager-Server/
+│
+├── src/
+│   └── com/
+│       └── ebookmanager/
+│           └── server/
+│               ├── main/
+│               │   └── Server.java         # Server application entry point
+│               │
+│               ├── api/ (or handler)
+│               │   ├── UserHandler.java    # Handles client requests for user actions
+│               │   ├── BookHandler.java    # Handles client requests for book actions
+│               │   └── ...
+│               │
+│               ├── service/
+│               │   ├── AuthService.java    # Implements login/register logic
+│               │   ├── BookService.java
+│               │   └── LibraryService.java
+│               │
+│               ├── model/ (or entity)
+│               │   ├── User.java
+│               │   ├── Book.java
+│               │   ├── UserBook.java
+│               │   └── Highlight.java
+│               │
+│               ├── dao/
+│               │   ├── UserDAO.java
+│               │   ├── BookDAO.java
+│               │   ├── UserBookDAO.java
+│               │   └── HighlightDAO.java
+│               │
+│               ├── db/
+│               │   └── DatabaseConnector.java
+│               │
+│               └── util/
+│                   └── PasswordHasher.java
 │
 ├── lib/
-│   └── mysql-connector-j-8.x.x.jar   # MySQL JDBC Driver
+│   └── mysql-connector-j-8.x.x.jar
 │
-├── resources/
-│   ├── icons/                          # Application icons
-│   │   ├── app_icon.png
-│   │   └── ...
-│   └── config.properties               # Database connection settings
+├── config/
+│   ├── server.properties               # Server settings (e.g., port)
+│   └── db.properties                   # Database connection settings
 │
 └── db_schema/
-    └── schema.sql                      # SQL script to create the database tables
-
+    └── schema.sql
