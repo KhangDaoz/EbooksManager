@@ -10,7 +10,7 @@ import com.ebookmanager.model.*;
 public class UserBookDAO {
     public void addUserBook(UserBook userbook)
     {
-        String sql="INSERT INTO user_book (user_id, book_id,"
+        String sql="INSERT INTO user_books (user_id, book_id,"
         + " reading_progress, date_added) VALUES (?, ?, ?, ?) ;";
         try
         (
@@ -18,9 +18,9 @@ public class UserBookDAO {
             PreparedStatement stm = conn.prepareStatement(sql);
         ) 
         {
-            stm.setString(1, userbook.getUser_id());
-            stm.setString(2, userbook.getBook_id());
-            stm.setFloat(3, userbook.getReading_progress(userbook.getUser_id()));
+            stm.setInt(1, userbook.getUser_id());
+            stm.setInt(2, userbook.getBook_id());
+            stm.setFloat(3, 0.0f);
             stm.setString(4, userbook.getDate_added());    
             stm.executeUpdate();
         } 
@@ -38,11 +38,11 @@ public class UserBookDAO {
             PreparedStatement stm = conn.prepareStatement(sql);
         ) 
         {
-            stm.setString(1, userbook.getUser_id());    
+            stm.setInt(1, userbook.getUser_id());    
             stm.executeQuery();
         } 
         catch (SQLException ex) {
-            // TODO: handle exception
+            
             ex.printStackTrace();
         }
     }
@@ -56,7 +56,7 @@ public class UserBookDAO {
             PreparedStatement stm = conn.prepareStatement(sql);
         ) 
         {
-            stm.setString(1, userbook.getUser_id());
+            stm.setInt(1, userbook.getUser_id());
             ResultSet rs = stm.executeQuery();
             ArrayList<ArrayList<String>> ans = new ArrayList<>();
 
@@ -71,23 +71,24 @@ public class UserBookDAO {
             }
             return ans;
         } catch (SQLException e) {
-            // TODO: handle exception
+            
             e.printStackTrace();
         } 
         return null;
     }
-
-    public float getProgress(User user, Book book)
+    // Take progress of book in user List
+    public float getProgress(int user_id, Book book)
     {
         String sql = "SELECT reading_progress FROM user_books"
-        + "WHERE user_id=" + user.getUser_id()
-        +" and book_id=" + book.getBookId() + " ;";
+        + "WHERE user_id= ? and book_id= ? ;";
         try
         (
             Connection conn = DatabaseConnector.getConnection();
             PreparedStatement stm = conn.prepareStatement(sql) 
         )
         {
+            stm.setInt(1, user_id);
+            stm.setInt(2, book.getBookId());
             ResultSet rs = stm.executeQuery();
             float progress = 0.0f;
             while(rs.next())
@@ -121,9 +122,59 @@ public class UserBookDAO {
             ex.printStackTrace();
         }
     }
-
-    public void updateUserBookDAO()
+    public boolean findBook(int user_id, Book book)
     {
-        
+        String sql = "SELECT book_id FROM user_books "
+        + "WHERE user_id = ? AND book_id = ? ;";
+        try
+        (
+            Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement stm = conn.prepareStatement(sql);
+        ) 
+        {
+            stm.setInt(1, user_id);
+            stm.setInt(2, book.getBookId());
+            ResultSet rs = stm.executeQuery();
+
+            int cnt = 0;
+            while(rs.next())
+            {
+                cnt ++;
+                if(cnt>0)
+                {
+                    return false;
+                }
+            }
+            if(cnt == 0) return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public void addBook(Book book, int user_id)
+    {
+        if(findBook(user_id, book))
+        {
+            String sql = "INSERT INTO user_books (user_id, book_id) VALUES"
+            + "(?, ?);";
+            try
+            (
+
+                Connection conn = DatabaseConnector.getConnection();
+                PreparedStatement stm = conn.prepareStatement(sql)
+            )
+            {
+                stm.setInt(1, user_id);
+                stm.setInt(2, book.getBookId());
+                stm.executeUpdate();
+            } catch (SQLException e) {
+                
+                e.printStackTrace();
+            }
+        }
+        else
+        {
+            System.out.println("Book existed");
+        }
     }
 }
