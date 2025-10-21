@@ -1,7 +1,6 @@
 package com.ebookmanager.model;
-import java.util.*;
 import com.ebookmanager.dao.*;
-import com.ebookmanager.dao.UserBookDAO;
+import java.util.*;
 public class UserBook {
     private ArrayList<Book> books;
     private ArrayList<Highlight> highlights;
@@ -78,7 +77,7 @@ public class UserBook {
         highlight.setEndPos(end);
 
         // Save to database
-        HightlightDAO hlD = new HightlightDAO();
+        HighlightDAO hlD = new HighlightDAO();
         hlD.createHighlight(highlight);
     }
 }//

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class HightlightDAO {
+public class HighlightDAO {
     public void createHighlight(Highlight highlight) {
         String sql = "INSERT INTO highlight (user_id, book_id, page_number, start_pos, end_pos, highlighted_text, note_content) VALUES (?,?,?,?,?,?,?);";
         try (Connection conn = DatabaseConnector.getConnection();

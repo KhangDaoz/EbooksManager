@@ -1,8 +1,8 @@
 package com.ebookmanager.model;
 
+import com.ebookmanager.dao.UserDAO;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import com.ebookmanager.dao.UserDAO;
 
 public class UserManager {
     private UserDAO userDAO;

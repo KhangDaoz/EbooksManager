@@ -11,8 +11,8 @@ import java.util.List;
 
 public class BookDAO {
 
-    public void addBook(Book book) {
-        String sql = "INSERT INTO book (book_title, author_name, cover_image, file_path, publish_date) VALUES (?, ?, ?, ?, ?);";
+    public void addBook(Book book, int userId) {
+        String sql = "INSERT INTO book (book_title, author_name, cover_image, file_path, publish_date,uploader_id) VALUES (?, ?, ?, ?, ?, ?);";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
             
@@ -21,6 +21,7 @@ public class BookDAO {
             query.setString(3, book.getCoverImage());
             query.setString(4, book.getFilePath());
             query.setString(5, book.getPublishDate());
+            query.setInt(6, userId);
             query.executeUpdate();
 
         } catch (SQLException e) {
@@ -44,7 +45,8 @@ public class BookDAO {
                         res.getString("author_name"),
                         res.getString("cover_image"),
                         res.getString("file_path"),
-                        res.getString("publish_date")
+                        res.getString("publish_date"),
+                        res.getInt("uploader_id")
                 );
             }
 
@@ -68,7 +70,8 @@ public class BookDAO {
                         res.getString("author_name"),
                         res.getString("cover_image"),
                         res.getString("file_path"),
-                        res.getString("publish_date")
+                        res.getString("publish_date"),
+                        res.getInt("uploader_id")
                 );
                 books.add(book);
             }
@@ -79,8 +82,15 @@ public class BookDAO {
         return books;
     }
 
-    public void updateBook(Book book) {
-        String sql = "UPDATE book SET book_title = ?, author_name = ?, cover_image = ?, file_path = ?, publish_date = ? WHERE book_id = ?;";
+
+    public boolean updateBook(Book book, int requestingUserId) {
+        // First verify ownership
+        Book existingBook = findBookById(book.getBookId());
+        if (existingBook == null || existingBook.getUploaderId() != requestingUserId) {
+            return false; // Not authorized
+        }
+        
+        String sql = "UPDATE book SET book_title = ?, author_name = ?, cover_image = ?, file_path = ?, publish_date = ? WHERE book_id = ? AND uploader_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
 
@@ -90,23 +100,37 @@ public class BookDAO {
             query.setString(4, book.getFilePath());
             query.setString(5, book.getPublishDate());
             query.setInt(6, book.getBookId());
-            query.executeUpdate();
+            query.setInt(7, requestingUserId); // Add uploader_id check
+            
+            int rowsAffected = query.executeUpdate();
+            return rowsAffected > 0; // Returns true if update succeeded
 
         } catch (SQLException e) {
             System.err.println("ERROR updating book: " + e.getMessage());
+            return false;
         }
     }
 
-    public void deleteBook(int bookId) {
-        String sql = "DELETE FROM book WHERE book_id = ?;";
+    public boolean deleteBook(int bookId, int requestingUserId) {
+        // First verify ownership
+        Book existingBook = findBookById(bookId);
+        if (existingBook == null || existingBook.getUploaderId() != requestingUserId) {
+            return false; // Not authorized
+        }
+        
+        String sql = "DELETE FROM book WHERE book_id = ? AND uploader_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
 
             query.setInt(1, bookId);
-            query.executeUpdate();
+            query.setInt(2, requestingUserId); // Add uploader_id check
+            
+            int rowsAffected = query.executeUpdate();
+            return rowsAffected > 0; 
 
         } catch (SQLException e) {
             System.err.println("ERROR deleting book: " + e.getMessage());
+            return false;
         }
     }
 }
