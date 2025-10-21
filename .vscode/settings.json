@@ -2,6 +2,6 @@
     "java.project.referencedLibraries": [
         "lib/pdfbox-app-3.0.6.jar",
         "lib/mysql-connector-j-9.4.0.jar",
-        "e:\\gson-2.13.1.jar"
+        "lib/gson-2.13.1.jar"
     ]
 }
