@@ -1,11 +1,11 @@
 package com.ebookmanager.dao;
 
+import com.ebookmanager.db.DatabaseConnector;
+import com.ebookmanager.model.User;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import com.ebookmanager.model.User;
-import com.ebookmanager.db.DatabaseConnector;
 
 public class UserDAO {
     private Connection connection;
@@ -63,4 +63,22 @@ public class UserDAO {
             System.err.println("ERROR updating user password: " + e.getMessage());
         }
     }
+    public User getUserById(int id) { // for authoriztion when making crud operation to book table
+        String sql = "SELECT * FROM user WHERE user_id = ?;";
+        try(PreparedStatement query = connection.prepareStatement(sql)) {
+            query.setInt(1, id);
+            ResultSet res = query.executeQuery();
+            if(res.next()) {
+                User user = new User();
+                user.setUser_id(res.getInt("user_id"));
+                user.setUser_name(res.getString("user_name"));
+                user.setHashed_password(res.getString("hashed_password"));
+                return user;
+            }
+        } catch(SQLException e) {
+            System.err.println("ERROR finding user by id: " + e.getMessage());
+        }
+        return null;
+    }
+    
 }
