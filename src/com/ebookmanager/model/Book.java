@@ -4,23 +4,28 @@ public class Book {
     private int bookId;
     private String bookTitle;
     private String authorName;
-    private String coverImage;
     private String filePath;
     private String publishDate;
     private int uploaderId;
     public Book() {
     }
-    public Book(int bookId, String bookTitle, String authorName, String coverImage, 
+    public Book(int bookId, String bookTitle, String authorName,
                 String filePath, String publishDate, int uploaderId) {
         this.bookId = bookId;
         this.bookTitle = bookTitle;
         this.authorName = authorName;
-        this.coverImage = coverImage;
         this.filePath = filePath;
         this.publishDate = publishDate;
         this.uploaderId = uploaderId;
     }
-    public int getBookId() {
+    public Book(String bookTitle, String authorName, String filePath, 
+                String publishDate) {
+        this.bookTitle = bookTitle;
+        this.authorName = authorName;
+        this.filePath = filePath;
+        this.publishDate = publishDate;
+    }
+    public int getBookId() {    
         return bookId;
     }
 
@@ -42,13 +47,6 @@ public class Book {
 
     public void setAuthorName(String authorName) {
         this.authorName = authorName;
-    }
-    public String getCoverImage() {
-        return coverImage;
-    }
-
-    public void setCoverImage(String coverImage) {
-        this.coverImage = coverImage;
     }
 
     public String getFilePath() {
