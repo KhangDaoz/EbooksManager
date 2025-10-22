@@ -12,16 +12,15 @@ import java.util.List;
 public class BookDAO {
 
     public void addBook(Book book, int userId) {
-        String sql = "INSERT INTO book (book_title, author_name, cover_image, file_path, publish_date,uploader_id) VALUES (?, ?, ?, ?, ?, ?);";
+        String sql = "INSERT INTO book (book_title, author_name, file_path, publish_date, uploader_id) VALUES (?, ?, ?, ?, ?);";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
             
             query.setString(1, book.getBookTitle());
             query.setString(2, book.getAuthorName());
-            query.setString(3, book.getCoverImage());
-            query.setString(4, book.getFilePath());
-            query.setString(5, book.getPublishDate());
-            query.setInt(6, userId);
+            query.setString(3, book.getFilePath());
+            query.setString(4, book.getPublishDate());
+            query.setInt(5, userId);
             query.executeUpdate();
 
         } catch (SQLException e) {
@@ -43,7 +42,6 @@ public class BookDAO {
                         res.getInt("book_id"),
                         res.getString("book_title"),
                         res.getString("author_name"),
-                        res.getString("cover_image"),
                         res.getString("file_path"),
                         res.getString("publish_date"),
                         res.getInt("uploader_id")
@@ -68,7 +66,6 @@ public class BookDAO {
                         res.getInt("book_id"),
                         res.getString("book_title"),
                         res.getString("author_name"),
-                        res.getString("cover_image"),
                         res.getString("file_path"),
                         res.getString("publish_date"),
                         res.getInt("uploader_id")
@@ -90,17 +87,16 @@ public class BookDAO {
             return false; // Not authorized
         }
         
-        String sql = "UPDATE book SET book_title = ?, author_name = ?, cover_image = ?, file_path = ?, publish_date = ? WHERE book_id = ? AND uploader_id = ?;";
+        String sql = "UPDATE book SET book_title = ?, author_name = ?, file_path = ?, publish_date = ? WHERE book_id = ? AND uploader_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
 
             query.setString(1, book.getBookTitle());
             query.setString(2, book.getAuthorName());
-            query.setString(3, book.getCoverImage());
-            query.setString(4, book.getFilePath());
-            query.setString(5, book.getPublishDate());
-            query.setInt(6, book.getBookId());
-            query.setInt(7, requestingUserId); // Add uploader_id check
+            query.setString(3, book.getFilePath());
+            query.setString(4, book.getPublishDate());
+            query.setInt(5, book.getBookId());
+            query.setInt(6, requestingUserId); // Add uploader_id check
             
             int rowsAffected = query.executeUpdate();
             return rowsAffected > 0; // Returns true if update succeeded
@@ -116,7 +112,7 @@ public class BookDAO {
         Book existingBook = findBookById(bookId);
         if (existingBook == null || existingBook.getUploaderId() != requestingUserId) {
             return false; // Not authorized
-        }
+        }   
         
         String sql = "DELETE FROM book WHERE book_id = ? AND uploader_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
@@ -133,4 +129,5 @@ public class BookDAO {
             return false;
         }
     }
+
 }
