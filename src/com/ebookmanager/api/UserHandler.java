@@ -11,6 +11,8 @@ import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import java.lang.reflect.Type;
+import com.google.gson.reflect.TypeToken;
 
 public class UserHandler {
     private final Auth auth;
@@ -29,7 +31,7 @@ public class UserHandler {
 
         server.setExecutor(null); // dùng executor mặc định
         server.start();
-        System.out.println("Server đang chạy ở cổng 8080...");
+        System.out.println("Server dang chay o cong 8080...");
     }
 
     // --- Handler cho từng API ---
@@ -42,7 +44,8 @@ public class UserHandler {
             }
 
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            Map<String, String> data = gson.fromJson(body, Map.class);
+            Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+            Map<String, String> data = gson.fromJson(body, mapType);
 
             String username = data.get("username");
             String password = data.get("password");
@@ -62,7 +65,9 @@ public class UserHandler {
             }
 
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            Map<String, String> data = gson.fromJson(body, Map.class);
+            Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+            Map<String, String> data = gson.fromJson(body, mapType);
+            
             String username = data.get("username");
             String password = data.get("password");
 

@@ -7,23 +7,22 @@ public class Highlight {
     private int pageNumber;
     private int startPos;
     private int endPos;
-    private String highlightedText;
+    private String backgroundColor;
     private String noteContent;
 
     // Default constructor
     public Highlight() {
     }
 
-    public Highlight(int UserId, int BookId, int PageNumber, int StartPos, int EndPos,String HighlightedText, String NoteContent) {
+    public Highlight(int UserId, int BookId, int PageNumber, int StartPos, int EndPos, String BackgroundColor, String NoteContent) {
         this.userId = UserId;
         this.bookId = BookId;
         this.pageNumber = PageNumber;
         this.startPos = StartPos;
         this.endPos = EndPos;
-        this.highlightedText = HighlightedText;
+        this.backgroundColor = BackgroundColor;
         this.noteContent = NoteContent;
     }
-
 
     //Getters
     public int getHighlightId() {
@@ -50,8 +49,8 @@ public class Highlight {
         return this.endPos;
     }
 
-    public String getHighlightedText() {
-        return this.highlightedText;
+    public String getBackgroundColor() {
+        return this.backgroundColor;
     }
 
     public String getNoteContent() {
@@ -69,6 +68,10 @@ public class Highlight {
 
     public void setEndPos(int EndPos) {
         this.endPos = EndPos;
+    }
+
+    public void setHighlightedText(String BackgroundColor) {
+        this.backgroundColor = BackgroundColor;
     }
 
     public void setNoteContent(String NoteContent) {

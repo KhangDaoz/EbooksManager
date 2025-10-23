@@ -12,7 +12,7 @@ import java.util.List;
 
 public class HighlightDAO {
     public void createHighlight(Highlight highlight) {
-        String sql = "INSERT INTO highlight (user_id, book_id, page_number, start_pos, end_pos, highlighted_text, note_content) VALUES (?,?,?,?,?,?,?);";
+        String sql = "INSERT INTO highlight (user_id, book_id, page_number, start_pos, end_pos, background_color, note_content) VALUES (?,?,?,?,?,?,?);";
         try (Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
             query.setInt(1, highlight.getUserId());
@@ -20,13 +20,14 @@ public class HighlightDAO {
             query.setInt(3, highlight.getPageNumber());
             query.setInt(4, highlight.getStartPos());
             query.setInt(5, highlight.getEndPos());
-            query.setString(7,highlight.getHighlightedText());
+            query.setString(7,highlight.getBackgroundColor());
             query.setString(6, highlight.getNoteContent());
             query.executeUpdate();
         } catch (SQLException e) {
             System.err.println("ERROR creating highlight: " + e.getMessage());
         }
     }
+
     public List<Highlight> getHighlightForUserBook(int userId,int bookId) {
         List<Highlight> highlights = new ArrayList<>();
         String sql = "SELECT * FROM highlight WHERE user_id = ? AND book_id = ?;";
@@ -42,17 +43,18 @@ public class HighlightDAO {
                     res.getInt("page_number"),
                     res.getInt("start_pos"),
                     res.getInt("end_pos"),
-                    res.getString("highlighted_text"),
+                    res.getString("background_color"),
                     res.getString("note_content")
                 );
                 highlights.add(highlight);
             }
 
         } catch (SQLException e) {
-            System.out.println("ERROR fetching hightlights: "+ e.getMessage());
+            System.out.println("ERROR fetching hightlights: " + e.getMessage());
         }
         return highlights;
     }
+
     public void updateHighlight(Highlight highlight) {
         String sql = "UPDATE highlight SET page_number = ?, start_pos = ?, end_pos = ? WHERE highlight_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
@@ -62,7 +64,7 @@ public class HighlightDAO {
             query.setInt(3,highlight.getEndPos());
             query.setInt(4,highlight.getHighlightId());
         } catch (SQLException e) {
-            System.out.println("ERROR updating highlight: " +e.getMessage());
+            System.out.println("ERROR updating highlight: " + e.getMessage());
         }
     }
 
@@ -73,7 +75,7 @@ public class HighlightDAO {
             query.setInt(1,highlightId);
             query.executeUpdate(sql);
         } catch (SQLException e) {
-            System.out.println("ERROR deleting highlight: " +e.getMessage());
+            System.out.println("ERROR deleting highlight: " + e.getMessage());
         }
     }
 
