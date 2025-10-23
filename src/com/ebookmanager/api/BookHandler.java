@@ -150,7 +150,7 @@ public class BookHandler implements HttpHandler {
         String path = exchange.getRequestURI().getPath();
         
         switch (method) {
-            case "GET":
+            case "GET" -> {
                 // Matches "/api/books/read/[some number]"
                 if (path.matches("/api/books/read/\\d+")) { 
                     handleReadBook(exchange);
@@ -164,19 +164,11 @@ public class BookHandler implements HttpHandler {
                     // Handle any other invalid GET requests
                     sendResponse(exchange, 404, "{\"error\":\"Not Found\"}");
                 }
-                break;
-            case "DELETE":
-                handleDeleteRequest(exchange);
-                break;
-            case "POST":
-                handlePostRequest(exchange);
-                break;
-            case "PUT":
-                handlePutRequest(exchange);
-                break;
-            default:
-                sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
-                break;
+            }
+            case "DELETE" -> handleDeleteRequest(exchange);
+            case "POST"   -> handlePostRequest(exchange);
+            case "PUT"    -> handlePutRequest(exchange);
+            default       -> sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
         }
     }
 
