@@ -4,19 +4,15 @@ import com.ebookmanager.dao.BookDAO;
 import com.ebookmanager.model.Book;
 import com.ebookmanager.service.Auth;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import com.google.gson.Gson;
 
-public class BookHandler implements HttpHandler {
+public class BookHandler extends BaseHandler {
     private final BookDAO bookDAO;
-    private final Gson gson;
-    private final Auth auth;
     private static final String UPLOAD_DIR = "uploads/";
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
@@ -43,9 +39,9 @@ public class BookHandler implements HttpHandler {
 
 
     public BookHandler(Auth auth) {
+        super(auth);
         this.bookDAO = new BookDAO();
-        this.gson = new Gson();
-        this.auth = auth;
+        
         // Create uploads directory if it doesn't exist
         try {
             Files.createDirectories(Paths.get(UPLOAD_DIR));
@@ -57,15 +53,6 @@ public class BookHandler implements HttpHandler {
     // Helper method for logging
     private void log(String message) {
         System.out.println("  │ " + message);
-    }
-    
-    private Integer getUserIdFromRequest(HttpExchange exchange) {        
-        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return null;
-        }
-        String token = authHeader.substring(7); //Remove "Bearer "
-        return auth.getUserIdFromToken(token);
     }
 
     private static class FileData {
@@ -508,12 +495,4 @@ public class BookHandler implements HttpHandler {
 
     }
 
-    private void sendResponse(HttpExchange exchange, int status, String jsonResponse) throws IOException {
-        byte[] responseBytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
-        exchange.sendResponseHeaders(status, responseBytes.length);
-        try (OutputStream os = exchange.getResponseBody()) {
-            os.write(responseBytes);
-        }
-    }
 }
