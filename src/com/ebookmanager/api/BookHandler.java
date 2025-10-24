@@ -46,7 +46,7 @@ public class BookHandler implements HttpHandler {
         this.bookDAO = new BookDAO();
         this.gson = new Gson();
         this.auth = auth;
-                // Create uploads directory if it doesn't exist
+        // Create uploads directory if it doesn't exist
         try {
             Files.createDirectories(Paths.get(UPLOAD_DIR));
         } catch (IOException e) {
@@ -54,7 +54,14 @@ public class BookHandler implements HttpHandler {
         }
     }
     
+    // Helper method for logging
+    private void log(String message) {
+        System.out.println("  │ " + message);
+    }
+    
     private Integer getUserIdFromRequest(HttpExchange exchange) {
+
+        
         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return null;
@@ -113,9 +120,13 @@ public class BookHandler implements HttpHandler {
                 String[] dispositions = headers.split("\r\n");
                 for(String disp : dispositions) {
                     if(disp.trim().startsWith("Content-Disposition")){
-                        name = disp.replaceAll("(?i).*name=\"([^\"]+)\".*", "$1");
+                        // Extract name attribute (must be preceded by space or semicolon)
+                        if (disp.matches(".*[\\s;]name=\"[^\"]+\".*")) {
+                            name = disp.replaceAll(".*[\\s;]name=\"([^\"]+)\".*", "$1");
+                        }
+                        // Extract filename attribute if present
                         if (disp.contains("filename=\"")) {
-                            filename = disp.replaceAll("(?i).*filename=\"([^\"]+)\".*", "$1");
+                            filename = disp.replaceAll(".*filename=\"([^\"]+)\".*", "$1");
                         }
                     }
                 }
@@ -166,41 +177,59 @@ public class BookHandler implements HttpHandler {
                 }
             }
             case "DELETE" -> handleDeleteRequest(exchange);
-            case "POST"   -> handlePostRequest(exchange);
-            case "PUT"    -> handlePutRequest(exchange);
-            default       -> sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
+            case "POST" -> handlePostRequest(exchange);
+            case "PUT" -> handlePutRequest(exchange);
+            default -> sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
         }
     }
 
     private void handleGetSingleBookRequest(HttpExchange exchange) throws IOException {
+        log("→ Processing: Get single book");
         String path = exchange.getRequestURI().getPath();
         String[] parts = path.split("/");
         Integer bookId = Integer.parseInt(parts[parts.length-1]);
+        log("  Book ID requested: " + bookId);
+        
         Book searchForBook = bookDAO.findBookById(bookId);
+        if (searchForBook != null) {
+            log("  ✓ Book found: " + searchForBook.getBookTitle() + " by " + searchForBook.getAuthorName());
+        } else {
+            log("  ✗ Book not found in database");
+        }
+        
         String jsonResponse = gson.toJson(searchForBook);
+        log("  Sending response with book data");
         sendResponse(exchange, 200, jsonResponse);
     }
     
     private void handleReadBook(HttpExchange exchange) throws IOException {
+        log("→ Processing: Read/Download book");
         String path = exchange.getRequestURI().getPath();
 
         int bookId = -1;
         try {
             String[] parts = path.split("/");
             bookId = Integer.parseInt(parts[parts.length-1]);
+            log("  Book ID requested: " + bookId);
         } catch (Exception e) {
+            log("  ✗ Invalid book ID format");
             sendResponse(exchange, 400, "\"{\\\"error\\\":\\\"Invalid book ID\\\"}\"");
             return;
         }
         Book bookToRead = bookDAO.findBookById(bookId);
         if (bookToRead == null) {
+            log("  ✗ Book not found in database");
             sendResponse(exchange, 404, "\"{\\\"Message\\\":\\\"Book Not Found\\\"}\"");
             return;
         }
+        
+        log("  ✓ Book found: " + bookToRead.getBookTitle());
         String filePathStr = bookToRead.getFilePath();
         Path filePath = Paths.get(filePathStr);
+        log("  File path: " + filePathStr);
 
         if (!Files.exists(filePath)) {
+            log("  ✗ File does not exist on disk");
             System.err.println("ERROR: missing file at " + filePathStr);
             sendResponse(exchange, 500, "{\"message\":\"Book not available on server\"}");
             return;
@@ -210,79 +239,106 @@ public class BookHandler implements HttpHandler {
         try {
             String filename = filePath.getFileName().toString();
             long fileSize = Files.size(filePath);
+            log("  File size: " + fileSize + " bytes");
+            log("  MIME type: " + getMimeType(filename));
 
             exchange.getResponseHeaders().set("Content-Type", getMimeType(filename));
             exchange.sendResponseHeaders(200, fileSize);
 
             // 4. Get the response body stream and copy the file directly to it
+            log("  Streaming file to client...");
             try (OutputStream os = exchange.getResponseBody()) {
                 Files.copy(filePath, os);
             }
+            log("  ✓ File sent successfully");
         } catch (IOException e) {
+            log("  ✗ Error streaming file: " + e.getMessage());
             System.err.println("Error streaming file: " + e.getMessage());
         }
 
     }
 
     private void handleGetRequest(HttpExchange exchange) throws IOException {
+        log("→ Processing: Get all books");
         List<Book> books = bookDAO.getAllBooks();
+        log("  Found " + books.size() + " books in database");
         String jsonResponse = gson.toJson(books);
+        log("  Sending book list");
         sendResponse(exchange, 200, jsonResponse);
     }
 
     private void handlePostRequest(HttpExchange exchange) throws IOException {
+        log("→ Processing: Upload new book");
 
         //check if user is logged in/authorized
         Integer uploaderId = getUserIdFromRequest(exchange);
         if (uploaderId == null) {
+            log("  ✗ Unauthorized - no valid user");
             sendResponse(exchange, 401, "{\"error\":\"Unauthorized user\"}");
             return;
         }
+        log("  User ID: " + uploaderId);
         
 
         // get Parsed data from post request
+        log("  Parsing multipart form data...");
         Map<String,Object> dataParsed = parseMultipartFormData(exchange);
 
         //validation all the feild
         Object titleObj = dataParsed.get("title");
         if (titleObj == null || titleObj.toString().trim().isEmpty()) {
+            log("  ✗ Missing book title");
             sendResponse(exchange, 400, "{\"error\":\"Book title is missing or invalid\"}");
             return;
         }
         String bookTitle = titleObj.toString();
+        log("  Book title: " + bookTitle);
 
         // these can be null
-        String publishedDate = dataParsed.get("published_date").toString().trim();
-        String bookAuthor = dataParsed.get("author").toString().trim();
+        Object dateObj = dataParsed.get("published_date");
+        String publishedDate = (dateObj != null) ? dateObj.toString().trim() : null;
+        log("  Published date: " + (publishedDate != null ? publishedDate : "not provided"));
+
+        Object authorObj = dataParsed.get("author");
+        String bookAuthor = (authorObj != null) ? authorObj.toString().trim() : null;
+        log("  Author: " + (bookAuthor != null ? bookAuthor : "not provided"));
 
         Object fileObject = dataParsed.get("ebookContent");
-        FileData parsedFile = null;
+        FileData parsedFile;
         if (fileObject instanceof FileData) {
             parsedFile = (FileData) fileObject;
         } else {
+            log("  ✗ Missing ebook file");
             sendResponse(exchange, 400, "{\"error\":\"Ebook file is missing or invalid\"}");
             return;
         }
 
         //check the extension
         String originalFileName = parsedFile.filename;
+        log("  Original filename: " + originalFileName);
         
         int dotIndex = originalFileName.lastIndexOf('.');
         String extension = (dotIndex > 0) ? originalFileName.substring(dotIndex).toLowerCase() : "";
         if (extension.isEmpty() || !ALLOWED_EXTENSIONS.contains(extension)) {
+            log("  ✗ Invalid file type: " + extension);
             sendResponse(exchange, 400, "{\"error\":\"Invalid file type. Allowed types are: " + ALLOWED_EXTENSIONS + "\"}");
             return;
         }
+        log("  ✓ File type valid: " + extension);
 
         //make a unique_name ?
         String uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
+        log("  Unique filename: " + uniqueFileName);
 
         Path filePath = Paths.get(UPLOAD_DIR, uniqueFileName);
 
         //save the file in the server
         try {
+            log("  Saving file to disk...");
             Files.copy(parsedFile.content, filePath);
+            log("  ✓ File saved: " + filePath.toString());
         } catch (IOException e) {
+            log("  ✗ Failed to save file: " + e.getMessage());
             System.out.println("Failed to save uploaded file: "+e.getMessage());
             sendResponse(exchange, 500, "{\"error\":\"Could not save file on the server.\"}");
             return;
@@ -291,21 +347,29 @@ public class BookHandler implements HttpHandler {
         //create new book to store in database
         Book newBook = new Book(bookTitle,bookAuthor,filePath.toString(),publishedDate);
         try {
+            log("  Adding book to database...");
             bookDAO.addBook(newBook, uploaderId);
+            log("  ✓ Book added successfully with ID: " + newBook.getBookId());
             String jsonResponse = gson.toJson(newBook);
-            sendResponse(exchange, 200, jsonResponse);
+            sendResponse(exchange, 201, jsonResponse);
         } catch (Exception e) {
+            System.err.println("Database error when adding book: " + e.getMessage());
+            Files.deleteIfExists(filePath); 
+            sendResponse(exchange, 500, "{\"error\":\"Could not save book record to database.\"}");
         }
     }
     
     private void handleDeleteRequest(HttpExchange exchange) throws IOException {
+        log("→ Processing: Delete book");
         String path = exchange.getRequestURI().getPath();
 
         int bookId = -1;
         try {
             String[] parts = path.split("/");
             bookId = Integer.parseInt(parts[parts.length-1]);
+            log("  Book ID to delete: " + bookId);
         } catch (Exception e) {
+            log("  ✗ Invalid book ID format");
             sendResponse(exchange, 400, "\"{\\\"error\\\":\\\"Invalid book ID in URL.\\\"}\"");
             return;
         }
@@ -313,37 +377,51 @@ public class BookHandler implements HttpHandler {
 
         Book bookToDelete = bookDAO.findBookById(bookId);
         if (bookToDelete == null) {
+            log("  ✗ Book not found");
             sendResponse(exchange, 404, "{\"error\":\"Book not found\"}");
             return;
         }
+        log("  Book found: " + bookToDelete.getBookTitle());
 
 
         // Is the user logged in?
         Integer userId = getUserIdFromRequest(exchange);
         if (userId == null) {
+            log("  ✗ Unauthorized user");
             sendResponse(exchange, 401, "{\"error\":\"Unauthorized user\"}");
             return;
         }
+        log("  User ID: " + userId);
 
         //Does the logged-in user own this book?
         if (bookToDelete.getUploaderId() != userId) {
+            log("  ✗ User doesn't own this book (owner: " + bookToDelete.getUploaderId() + ")");
             sendResponse(exchange, 403, "{\"error\":\"Forbidden: You do not have permission to delete this book.\"}");
             return;
         }
+        log("  ✓ User owns this book");
+
 
         try {
             //get the file path
             String filePathStr = bookToDelete.getFilePath();
             Path filePath = Paths.get(filePathStr);
+            log("  File path: " + filePathStr);
 
+            log("  Deleting from database...");
             boolean success = bookDAO.deleteBook(bookId, userId);
             if (success) {
+                log("  ✓ Deleted from database");
+                log("  Deleting file from disk...");
                 Files.deleteIfExists(filePath);
+                log("  ✓ Book deleted successfully");
                 sendResponse(exchange, 200, "{\"message\":\"Book deleted successfully.\"}");
             } else {
+                log("  ✗ Database deletion failed");
                 sendResponse(exchange, 404, "{\"message\":\"Failed to delete(Book may no longer exist)\"}");
             }
         } catch (Exception e) {
+            log("  ✗ Error during deletion: " + e.getMessage());
             System.err.println("Error during book deletion: " + e.getMessage());
             sendResponse(exchange, 500, "\"{\\\"error\\\":\\\"A server error occurred during deletion.\\\"}\"");
         }
