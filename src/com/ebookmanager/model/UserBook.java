@@ -1,8 +1,6 @@
 package com.ebookmanager.model;
-import com.ebookmanager.dao.*;
-import java.util.*;
+
 public class UserBook {
-    private ArrayList<Highlight> highlights;
     private int user_id;
     private int book_id;
     private String date_added;
@@ -19,9 +17,6 @@ public class UserBook {
     }
 
     // Getters
-    public ArrayList<Highlight> getHighlights() {
-        return highlights;
-    }
     public int getUser_id() {
         return user_id;
     }
@@ -36,7 +31,6 @@ public class UserBook {
     }
 
     // Setters
-
 
     // // ADD HIGHLIGHT INTO BOOK'S PAGE AND 
     // // ADD HIGHLIGHT'S INFORMATION INTO DATABASE

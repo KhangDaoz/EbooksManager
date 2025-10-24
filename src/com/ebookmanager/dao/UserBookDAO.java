@@ -3,6 +3,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.*;
@@ -74,6 +76,36 @@ public class UserBookDAO {
             e.printStackTrace();
         } 
         return null;
+    }
+
+    public List<UserBook> getUserBooks(int user_id)
+    {
+        List<UserBook> userBooks = new ArrayList<>();
+        String sql = "SELECT * FROM user_books WHERE user_id = ? ;";
+        try
+        (
+            Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement stm = conn.prepareStatement(sql);
+        ) 
+        {
+            stm.setInt(1, user_id);
+            ResultSet rs = stm.executeQuery();
+            while(rs.next())
+            {
+                UserBook userbook = new UserBook(
+                    rs.getInt("user_id"),
+                    rs.getInt("book_id"),
+                    rs.getString("date_added"),
+                    rs.getFloat("reading_progress")
+                );
+                userBooks.add(userbook);
+            }
+
+        } catch (SQLException e) {
+            
+            e.printStackTrace();
+        } 
+        return userBooks;
     }
 
     // // Take progress of book in user List
