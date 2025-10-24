@@ -59,9 +59,7 @@ public class BookHandler implements HttpHandler {
         System.out.println("  │ " + message);
     }
     
-    private Integer getUserIdFromRequest(HttpExchange exchange) {
-
-        
+    private Integer getUserIdFromRequest(HttpExchange exchange) {        
         String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return null;
@@ -82,76 +80,104 @@ public class BookHandler implements HttpHandler {
     
     private Map<String, Object> parseMultipartFormData(HttpExchange exchange) throws IOException {
         Map<String, Object> parameters = new HashMap<>();
-        String boundary = "";
 
         // 1. Get the boundary string from the Content-Type header
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
-        if (contentType != null && contentType.startsWith("multipart/form-data")) {
-            boundary = "--" + contentType.substring(contentType.indexOf("boundary=") + 9);
-        } else {
+        if (contentType == null || !contentType.startsWith("multipart/form-data")) {
             return parameters; // Not a multipart request
         }
+        
+        String boundary = "--" + contentType.substring(contentType.indexOf("boundary=") + 9);
+        byte[] boundaryBytes = boundary.getBytes(StandardCharsets.UTF_8);
 
-        // 2. Read the entire request body
+        // 2. Read the entire request body as bytes (DO NOT convert to String yet - this corrupts binary data)
         InputStream requestBody = exchange.getRequestBody();
         byte[] bodyBytes = requestBody.readAllBytes();
-        String bodyString = new String(bodyBytes, StandardCharsets.UTF_8);
 
-        // 3. Split the body into parts using the boundary
-        String[] parts = bodyString.split(boundary);
-
-        for (String part : parts) {
-            if (part.trim().isEmpty() || part.equals("--")) {
+        // 3. Find parts by searching for boundary in the byte array
+        int pos = 0;
+        while (pos < bodyBytes.length) {
+            // Find next boundary
+            int boundaryStart = indexOf(bodyBytes, boundaryBytes, pos);
+            if (boundaryStart == -1) break;
+            
+            // Move past the boundary and CRLF
+            int partStart = boundaryStart + boundaryBytes.length;
+            if (partStart + 2 <= bodyBytes.length && bodyBytes[partStart] == '\r' && bodyBytes[partStart + 1] == '\n') {
+                partStart += 2;
+            }
+            
+            // Find next boundary (end of this part)
+            int nextBoundaryStart = indexOf(bodyBytes, boundaryBytes, partStart);
+            if (nextBoundaryStart == -1) nextBoundaryStart = bodyBytes.length;
+            
+            // Find the empty line separating headers from content (CRLFCRLF)
+            int headerEnd = indexOf(bodyBytes, "\r\n\r\n".getBytes(StandardCharsets.UTF_8), partStart);
+            if (headerEnd == -1 || headerEnd >= nextBoundaryStart) {
+                pos = nextBoundaryStart;
                 continue;
             }
-
-            // 4. For each part, find its headers and content
-            String[] headersAndContent = part.split("\r\n\r\n", 2);
-            if (headersAndContent.length < 2) continue;
-
-            String headers = headersAndContent[0];
-            String content = headersAndContent[1].trim();
-
+            
+            // Extract headers as string (safe - headers are always text)
+            String headers = new String(bodyBytes, partStart, headerEnd - partStart, StandardCharsets.UTF_8);
+            
+            // Content starts after CRLFCRLF
+            int contentStart = headerEnd + 4;
+            // Content ends before CRLF + boundary (subtract 2 for the CRLF before boundary)
+            int contentEnd = nextBoundaryStart - 2;
+            if (contentEnd < contentStart) contentEnd = contentStart;
+            
+            // Parse Content-Disposition header
             String name = null;
             String filename = null;
-
-            // 5. Parse the "Content-Disposition" header to get the field name and filename
-            if (headers.contains("Content-Disposition: form-data;")) {
-                String[] dispositions = headers.split("\r\n");
-                for(String disp : dispositions) {
-                    if(disp.trim().startsWith("Content-Disposition")){
-                        // Extract name attribute (must be preceded by space or semicolon)
-                        if (disp.matches(".*[\\s;]name=\"[^\"]+\".*")) {
-                            name = disp.replaceAll(".*[\\s;]name=\"([^\"]+)\".*", "$1");
-                        }
-                        // Extract filename attribute if present
-                        if (disp.contains("filename=\"")) {
-                            filename = disp.replaceAll(".*filename=\"([^\"]+)\".*", "$1");
-                        }
+            
+            String[] headerLines = headers.split("\r\n");
+            for (String line : headerLines) {
+                if (line.trim().startsWith("Content-Disposition")) {
+                    // Extract name attribute
+                    if (line.matches(".*[\\s;]name=\"[^\"]+\".*")) {
+                        name = line.replaceAll(".*[\\s;]name=\"([^\"]+)\".*", "$1");
+                    }
+                    // Extract filename attribute if present
+                    if (line.contains("filename=\"")) {
+                        filename = line.replaceAll(".*filename=\"([^\"]+)\".*", "$1");
                     }
                 }
             }
-
-            if (name == null) continue;
-
-            // 6. Store the data in the map
-            if (filename != null) {
-                // It's a file. We need to find its raw bytes from the original body.
-                // This is a simplified way to do it for this example.
-                int startIndex = bodyString.indexOf(headers) + headers.length() + 4;
-                int endIndex = bodyString.indexOf(boundary, startIndex) - 2;
-                if (endIndex < startIndex) {
-                    endIndex = bodyBytes.length - boundary.length() - 2;
+            
+            if (name != null) {
+                if (filename != null && !filename.isEmpty()) {
+                    // It's a file - extract raw bytes (DO NOT convert to String)
+                    byte[] fileBytes = Arrays.copyOfRange(bodyBytes, contentStart, contentEnd);
+                    InputStream fileInputStream = new ByteArrayInputStream(fileBytes);
+                    parameters.put(name, new FileData(filename, fileInputStream));
+                } else {
+                    // It's a text field - safe to convert to String
+                    String textValue = new String(bodyBytes, contentStart, contentEnd - contentStart, StandardCharsets.UTF_8).trim();
+                    parameters.put(name, textValue);
                 }
-                byte[] fileBytes = Arrays.copyOfRange(bodyBytes, startIndex, endIndex);
-                InputStream fileInputStream = new ByteArrayInputStream(fileBytes);
-                parameters.put(name, new FileData(filename, fileInputStream));
-            } else {
-                // It's a regular text field
-                parameters.put(name, content);
             }
+            
+            pos = nextBoundaryStart;
         }
+        
         return parameters;
+    }
+    
+    // Helper method to find byte sequence in byte array
+    private int indexOf(byte[] array, byte[] target, int start) {
+        if (target.length == 0) return start;
+        
+        outer:
+        for (int i = start; i <= array.length - target.length; i++) {
+            for (int j = 0; j < target.length; j++) {
+                if (array[i + j] != target[j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
     }
 
 
@@ -187,7 +213,7 @@ public class BookHandler implements HttpHandler {
         log("→ Processing: Get single book");
         String path = exchange.getRequestURI().getPath();
         String[] parts = path.split("/");
-        Integer bookId = Integer.parseInt(parts[parts.length-1]);
+        Integer bookId = Integer.valueOf(parts[parts.length-1]);
         log("  Book ID requested: " + bookId);
         
         Book searchForBook = bookDAO.findBookById(bookId);
@@ -211,7 +237,7 @@ public class BookHandler implements HttpHandler {
             String[] parts = path.split("/");
             bookId = Integer.parseInt(parts[parts.length-1]);
             log("  Book ID requested: " + bookId);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             log("  ✗ Invalid book ID format");
             sendResponse(exchange, 400, "\"{\\\"error\\\":\\\"Invalid book ID\\\"}\"");
             return;
@@ -352,7 +378,7 @@ public class BookHandler implements HttpHandler {
             log("  ✓ Book added successfully with ID: " + newBook.getBookId());
             String jsonResponse = gson.toJson(newBook);
             sendResponse(exchange, 201, jsonResponse);
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.err.println("Database error when adding book: " + e.getMessage());
             Files.deleteIfExists(filePath); 
             sendResponse(exchange, 500, "{\"error\":\"Could not save book record to database.\"}");
@@ -368,7 +394,7 @@ public class BookHandler implements HttpHandler {
             String[] parts = path.split("/");
             bookId = Integer.parseInt(parts[parts.length-1]);
             log("  Book ID to delete: " + bookId);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             log("  ✗ Invalid book ID format");
             sendResponse(exchange, 400, "\"{\\\"error\\\":\\\"Invalid book ID in URL.\\\"}\"");
             return;
@@ -420,22 +446,22 @@ public class BookHandler implements HttpHandler {
                 log("  ✗ Database deletion failed");
                 sendResponse(exchange, 404, "{\"message\":\"Failed to delete(Book may no longer exist)\"}");
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log("  ✗ Error during deletion: " + e.getMessage());
             System.err.println("Error during book deletion: " + e.getMessage());
-            sendResponse(exchange, 500, "\"{\\\"error\\\":\\\"A server error occurred during deletion.\\\"}\"");
+            sendResponse(exchange, 500, "\"{\"error\":\"A server error occurred during deletion.\"}\"");
         }
     }
 
     private void handlePutRequest(HttpExchange exchange) throws IOException {
-        String path = exchange.getRequestURI().getPath();
 
         int bookId = -1;
         try {
+            String path = exchange.getRequestURI().getPath();
             String[] parts = path.split("/");
             bookId = Integer.parseInt(parts[parts.length-1]);
-        } catch (Exception e) {
-            sendResponse(exchange, 400, "\"{\\\"error\\\":\\\"Invalid book ID in URL.\\\"}\"");
+        } catch (NumberFormatException e) {
+            sendResponse(exchange, 400, "\"{\"error\":\"Invalid book ID in URL.\"}\"");
             return;
         }
 
@@ -475,7 +501,7 @@ public class BookHandler implements HttpHandler {
             } else {
                 sendResponse(exchange, 500, "{\"error\":\"Failed to update book.\"}");
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.err.println("Error updating book: " + e.getMessage());
             sendResponse(exchange, 400, "{\"error\":\"Invalid request data.\"}");
         }
