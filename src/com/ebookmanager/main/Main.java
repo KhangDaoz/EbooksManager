@@ -1,51 +1,85 @@
 package com.ebookmanager.main;
 
+import com.ebookmanager.api.BookHandler;
 import com.ebookmanager.api.UserHandler;
 import com.ebookmanager.dao.UserDAO;
 import com.ebookmanager.service.Auth;
 import com.ebookmanager.service.SessionManager;
-
+import com.sun.net.httpserver.HttpServer;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Scanner;
 
 /**
- * Test class for UserHandler API
- * Tests registration, login, and logout endpoints
+ * Test class for UserHandler and BookHandler APIs
+ * Tests registration, login, logout, and book management endpoints
  */
 public class Main {
     
     private static final String BASE_URL = "http://localhost:8080";
+    private static final String BOOK_API_URL = "http://localhost:8081/api/books";
     private static Scanner scanner = new Scanner(System.in);
     private static String currentToken = null;
     
     public static void main(String[] args) {
         System.out.println("=================================================");
-        System.out.println("   UserHandler API Testing Tool");
+        System.out.println("   API Testing Tool");
         System.out.println("=================================================\n");
         
-        // Start the server in a separate thread
+        // Create shared instances
+        UserDAO userDAO;
+        try {
+            userDAO = new UserDAO();
+        } catch (Exception e) {
+            System.err.println("Failed to initialize UserDAO: " + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
+        
+        SessionManager sessionManager = new SessionManager(); // Shared!
+        Auth auth = new Auth(userDAO, sessionManager); // Shared!
+        
+        // Start UserHandler server in a separate thread
         Thread serverThread = new Thread(() -> {
             try {
-                UserDAO userDAO = new UserDAO();
-                SessionManager sessionManager = new SessionManager();
-                Auth auth = new Auth(userDAO, sessionManager);
                 UserHandler userHandler = new UserHandler(auth);
-                
-                System.out.println("Starting UserHandler server...\n");
+                System.out.println("Starting UserHandler server on port 8080...\n");
                 userHandler.start();
             } catch (Exception e) {
-                System.err.println("Failed to start server: " + e.getMessage());
+                System.err.println("Failed to start UserHandler server: " + e.getMessage());
                 e.printStackTrace();
             }
         });
         
         serverThread.setDaemon(true);
         serverThread.start();
+        
+        // Start BookHandler in another thread on port 8081
+        Thread bookServerThread = new Thread(() -> {
+            try {
+                // Create HTTP server for BookHandler on port 8081
+                HttpServer bookServer = HttpServer.create(new InetSocketAddress(8081), 0);
+                BookHandler bookHandler = new BookHandler(auth); // Uses same auth instance!
+                bookServer.createContext("/api/books", bookHandler);
+                
+                bookServer.setExecutor(null);
+                System.out.println("Starting BookHandler server on port 8081...\n");
+                bookServer.start();
+            } catch (Exception e) {
+                System.err.println("Failed to start BookHandler server: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+        
+        bookServerThread.setDaemon(true);
+        bookServerThread.start();
         
         // Wait for server to start
         try {
@@ -74,6 +108,21 @@ public class Main {
                         break;
                     case 4:
                         showCurrentToken();
+                        break;
+                    case 5:
+                        testGetAllBooks();
+                        break;
+                    case 6:
+                        testGetSingleBook();
+                        break;
+                    case 7:
+                        testUploadBook();
+                        break;
+                    case 8:
+                        testDeleteBook();
+                        break;
+                    case 9:
+                        testUpdateBook();
                         break;
                     case 0:
                         running = false;
@@ -104,10 +153,19 @@ public class Main {
         System.out.println("\n=================================================");
         System.out.println("              TEST MENU");
         System.out.println("=================================================");
+        System.out.println("USER API (port 8080):");
         System.out.println("1. Test Register (POST /register)");
         System.out.println("2. Test Login (POST /login)");
         System.out.println("3. Test Logout (POST /logout)");
         System.out.println("4. Show Current Token");
+        System.out.println();
+        System.out.println("BOOK API (port 8081):");
+        System.out.println("5. Test Get All Books (GET /api/books)");
+        System.out.println("6. Test Get Single Book (GET /api/books/{id})");
+        System.out.println("7. Test Upload Book (POST /api/books)");
+        System.out.println("8. Test Delete Book (DELETE /api/books/{id})");
+        System.out.println("9. Test Update Book (PUT /api/books/{id})");
+        System.out.println();
         System.out.println("0. Exit");
         System.out.println("=================================================");
         System.out.print("Enter your choice: ");
@@ -216,6 +274,240 @@ public class Main {
     }
     
     /**
+     * Test get all books
+     */
+    private static void testGetAllBooks() throws Exception {
+        System.out.println("\n--- Testing Get All Books API ---");
+        
+        HttpResponse response = sendRequest("GET", BOOK_API_URL, null, null);
+        
+        System.out.println("\n✓ Response Status: " + response.statusCode);
+        System.out.println("✓ Response Body: " + response.body);
+        
+        if (response.statusCode == 200) {
+            System.out.println("✓ Successfully retrieved books!");
+        } else {
+            System.out.println("✗ Unexpected response");
+        }
+    }
+    
+    /**
+     * Test get single book
+     */
+    private static void testGetSingleBook() throws Exception {
+        System.out.println("\n--- Testing Get Single Book API ---");
+        System.out.print("Enter book ID: ");
+        String bookId = scanner.nextLine();
+        
+        HttpResponse response = sendRequest("GET", BOOK_API_URL + "/" + bookId, null, null);
+        
+        System.out.println("\n✓ Response Status: " + response.statusCode);
+        System.out.println("✓ Response Body: " + response.body);
+        
+        if (response.statusCode == 200) {
+            System.out.println("✓ Successfully retrieved book!");
+        } else if (response.statusCode == 404) {
+            System.out.println("✗ Book not found");
+        } else {
+            System.out.println("✗ Unexpected response");
+        }
+    }
+    
+    /**
+     * Test upload book (multipart form-data)
+     */
+    private static void testUploadBook() throws Exception {
+        System.out.println("\n--- Testing Upload Book API ---");
+        
+        if (currentToken == null) {
+            System.out.println("✗ No token stored. Please login first (option 2).");
+            return;
+        }
+        
+        System.out.print("Enter book title: ");
+        String title = scanner.nextLine();
+        System.out.print("Enter author name (optional): ");
+        String author = scanner.nextLine();
+        System.out.print("Enter published date (optional): ");
+        String publishedDate = scanner.nextLine();
+        System.out.print("Enter file path: ");
+        String filePath = scanner.nextLine();
+        
+        File file = new File(filePath);
+        if (!file.exists()) {
+            System.out.println("✗ File not found: " + filePath);
+            return;
+        }
+        
+        HttpResponse response = sendMultipartRequest(BOOK_API_URL, title, author, publishedDate, file, currentToken);
+        
+        System.out.println("\n✓ Response Status: " + response.statusCode);
+        System.out.println("✓ Response Body: " + response.body);
+        
+        if (response.statusCode == 201) {
+            System.out.println("✓ Book uploaded successfully!");
+        } else if (response.statusCode == 401) {
+            System.out.println("✗ Unauthorized - please login first");
+        } else if (response.statusCode == 400) {
+            System.out.println("✗ Bad request - check your input");
+        } else {
+            System.out.println("✗ Upload failed");
+        }
+    }
+    
+    /**
+     * Test delete book
+     */
+    private static void testDeleteBook() throws Exception {
+        System.out.println("\n--- Testing Delete Book API ---");
+        
+        if (currentToken == null) {
+            System.out.println("✗ No token stored. Please login first (option 2).");
+            return;
+        }
+        
+        System.out.print("Enter book ID to delete: ");
+        String bookId = scanner.nextLine();
+        
+        HttpResponse response = sendRequest("DELETE", BOOK_API_URL + "/" + bookId, null, currentToken);
+        
+        System.out.println("\n✓ Response Status: " + response.statusCode);
+        System.out.println("✓ Response Body: " + response.body);
+        
+        if (response.statusCode == 200) {
+            System.out.println("✓ Book deleted successfully!");
+        } else if (response.statusCode == 401) {
+            System.out.println("✗ Unauthorized");
+        } else if (response.statusCode == 403) {
+            System.out.println("✗ Forbidden - you don't own this book");
+        } else if (response.statusCode == 404) {
+            System.out.println("✗ Book not found");
+        } else {
+            System.out.println("✗ Delete failed");
+        }
+    }
+    
+    /**
+     * Test update book
+     */
+    private static void testUpdateBook() throws Exception {
+        System.out.println("\n--- Testing Update Book API ---");
+        
+        if (currentToken == null) {
+            System.out.println("✗ No token stored. Please login first (option 2).");
+            return;
+        }
+        
+        System.out.print("Enter book ID to update: ");
+        String bookId = scanner.nextLine();
+        System.out.print("Enter new title: ");
+        String title = scanner.nextLine();
+        System.out.print("Enter new author: ");
+        String author = scanner.nextLine();
+        System.out.print("Enter new published date: ");
+        String publishedDate = scanner.nextLine();
+        
+        String jsonPayload = String.format(
+            "{\"bookTitle\":\"%s\",\"authorName\":\"%s\",\"publishedDate\":\"%s\"}",
+            title, author, publishedDate
+        );
+        
+        HttpResponse response = sendRequest("PUT", BOOK_API_URL + "/" + bookId, jsonPayload, currentToken);
+        
+        System.out.println("\n✓ Response Status: " + response.statusCode);
+        System.out.println("✓ Response Body: " + response.body);
+        
+        if (response.statusCode == 200) {
+            System.out.println("✓ Book updated successfully!");
+        } else if (response.statusCode == 401) {
+            System.out.println("✗ Unauthorized");
+        } else if (response.statusCode == 403) {
+            System.out.println("✗ Forbidden - you don't own this book");
+        } else if (response.statusCode == 404) {
+            System.out.println("✗ Book not found");
+        } else {
+            System.out.println("✗ Update failed");
+        }
+    }
+    
+    /**
+     * Send multipart/form-data request for file upload
+     */
+    private static HttpResponse sendMultipartRequest(String urlString, String title, String author, 
+                                                     String publishedDate, File ebookContent, String token) throws Exception {
+        String boundary = "----WebKitFormBoundary" + System.currentTimeMillis();
+        String LINE_FEED = "\r\n";
+        
+        URI uri = new URI(urlString);
+        HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
+        conn.setRequestMethod("POST");
+        conn.setDoOutput(true);
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        
+        if (token != null) {
+            String authHeader = "Bearer " + token;
+            conn.setRequestProperty("Authorization", authHeader);
+        }
+        
+        try (OutputStream os = conn.getOutputStream()) {
+            // Add title field
+            os.write(("--" + boundary + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            os.write(("Content-Disposition: form-data; name=\"title\"" + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            os.write((LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            os.write((title + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            
+            // Add author field if provided
+            if (author != null && !author.isEmpty()) {
+                os.write(("--" + boundary + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+                os.write(("Content-Disposition: form-data; name=\"author\"" + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+                os.write((LINE_FEED).getBytes(StandardCharsets.UTF_8));
+                os.write((author + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            }
+            
+            // Add published_date field if provided
+            if (publishedDate != null && !publishedDate.isEmpty()) {
+                os.write(("--" + boundary + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+                os.write(("Content-Disposition: form-data; name=\"published_date\"" + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+                os.write((LINE_FEED).getBytes(StandardCharsets.UTF_8));
+                os.write((publishedDate + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            }
+            
+            // Add file field
+            os.write(("--" + boundary + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            os.write(("Content-Disposition: form-data; name=\"ebookContent\"; filename=\"" + ebookContent.getName() + "\"" + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            os.write(("Content-Type: application/octet-stream" + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            os.write((LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            
+            // Write file content
+            Files.copy(ebookContent.toPath(), os);
+            os.write((LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            
+            // End multipart
+            os.write(("--" + boundary + "--" + LINE_FEED).getBytes(StandardCharsets.UTF_8));
+            os.flush();
+        }
+        
+        int statusCode = conn.getResponseCode();
+        
+        // Read response
+        BufferedReader br;
+        if (statusCode >= 200 && statusCode < 300) {
+            br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+        } else {
+            br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
+        }
+        
+        StringBuilder response = new StringBuilder();
+        String line;
+        while ((line = br.readLine()) != null) {
+            response.append(line);
+        }
+        br.close();
+        
+        return new HttpResponse(statusCode, response.toString());
+    }
+    
+    /**
      * Send HTTP request and get response
      */
     private static HttpResponse sendRequest(String method, String urlString, String jsonPayload, String token) throws Exception {
@@ -225,7 +517,12 @@ public class Main {
         conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
         
         if (token != null) {
-            conn.setRequestProperty("Authorization", token);
+            // Book API requires "Bearer " prefix, User API doesn't
+            if (urlString.contains("/api/books")) {
+                conn.setRequestProperty("Authorization", "Bearer " + token);
+            } else {
+                conn.setRequestProperty("Authorization", token);
+            }
         }
         
         if (jsonPayload != null && !jsonPayload.isEmpty()) {
