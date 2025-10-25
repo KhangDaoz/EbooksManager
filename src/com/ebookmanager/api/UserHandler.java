@@ -43,16 +43,19 @@ public class UserHandler extends BaseHandler {
             sendResponse(exchange, 401, "{\"error\":\"Unauthorized user\"}");
             return;
         }
-        var user = auth.getUserById(userId);
+        
+        // Get token from header to fetch user
+        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+        String token = authHeader.substring(7); // Remove "Bearer "
+        var user = auth.getUserFromToken(token);
+        
         if (user == null) {
             sendResponse(exchange, 404, "{\"error\":\"User not found\"}");
             return;
         }
 
-        String jsonResponse = gson.toJson(Map.of(
-            "userId", user.getUser_id(),
-            "username", user.getUser_name()
-        ));
+        String jsonResponse = "{\"userId\":" + user.getUser_id() + 
+            ",\"username\":\"" + user.getUser_name() + "\"}";
         sendResponse(exchange, 200, jsonResponse);
     }
 

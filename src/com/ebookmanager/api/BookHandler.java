@@ -16,32 +16,36 @@ public class BookHandler extends BaseHandler {
     private static final String UPLOAD_DIR = "uploads/";
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-        ".pdf", ".epub", ".mobi", ".azw", ".azw3", ".txt", ".djvu", ".fb2"
+            ".pdf", ".epub", ".mobi", ".azw", ".azw3", ".txt", ".djvu", ".fb2"
 
     );
 
     private String getMimeType(String filename) {
         String lowercased = filename.toLowerCase();
 
-        if (lowercased.endsWith(".pdf")) return "application/pdf";
-        if (lowercased.endsWith(".epub")) return "application/epub+zip";
-        if (lowercased.endsWith(".mobi")) return "application/x-mobipocket-ebook";
-        if (lowercased.endsWith(".txt")) return "text/plain";
-        if (lowercased.endsWith(".djvu")) return "image/vnd.djvu";
-        if (lowercased.endsWith(".fb2")) return "application/x-fictionbook+xml";
+        if (lowercased.endsWith(".pdf"))
+            return "application/pdf";
+        if (lowercased.endsWith(".epub"))
+            return "application/epub+zip";
+        if (lowercased.endsWith(".mobi"))
+            return "application/x-mobipocket-ebook";
+        if (lowercased.endsWith(".txt"))
+            return "text/plain";
+        if (lowercased.endsWith(".djvu"))
+            return "image/vnd.djvu";
+        if (lowercased.endsWith(".fb2"))
+            return "application/x-fictionbook+xml";
         if (lowercased.endsWith(".azw") || lowercased.endsWith(".azw3")) {
-            return "application/vnd.amazon.ebook"; 
+            return "application/vnd.amazon.ebook";
         }
 
         return "application/octet-stream";
     }
 
-
-
     public BookHandler(Auth auth) {
         super(auth);
         this.bookDAO = new BookDAO();
-        
+
         // Create uploads directory if it doesn't exist
         try {
             Files.createDirectories(Paths.get(UPLOAD_DIR));
@@ -49,7 +53,7 @@ public class BookHandler extends BaseHandler {
             System.err.println("Failed to create upload directory: " + e.getMessage());
         }
     }
-    
+
     // Helper method for logging
     private void log(String message) {
         System.out.println("  │ " + message);
@@ -64,7 +68,7 @@ public class BookHandler extends BaseHandler {
             this.content = content;
         }
     }
-    
+
     private Map<String, Object> parseMultipartFormData(HttpExchange exchange) throws IOException {
         Map<String, Object> parameters = new HashMap<>();
 
@@ -73,11 +77,12 @@ public class BookHandler extends BaseHandler {
         if (contentType == null || !contentType.startsWith("multipart/form-data")) {
             return parameters; // Not a multipart request
         }
-        
+
         String boundary = "--" + contentType.substring(contentType.indexOf("boundary=") + 9);
         byte[] boundaryBytes = boundary.getBytes(StandardCharsets.UTF_8);
 
-        // 2. Read the entire request body as bytes (DO NOT convert to String yet - this corrupts binary data)
+        // 2. Read the entire request body as bytes (DO NOT convert to String yet - this
+        // corrupts binary data)
         InputStream requestBody = exchange.getRequestBody();
         byte[] bodyBytes = requestBody.readAllBytes();
 
@@ -86,38 +91,41 @@ public class BookHandler extends BaseHandler {
         while (pos < bodyBytes.length) {
             // Find next boundary
             int boundaryStart = indexOf(bodyBytes, boundaryBytes, pos);
-            if (boundaryStart == -1) break;
-            
+            if (boundaryStart == -1)
+                break;
+
             // Move past the boundary and CRLF
             int partStart = boundaryStart + boundaryBytes.length;
             if (partStart + 2 <= bodyBytes.length && bodyBytes[partStart] == '\r' && bodyBytes[partStart + 1] == '\n') {
                 partStart += 2;
             }
-            
+
             // Find next boundary (end of this part)
             int nextBoundaryStart = indexOf(bodyBytes, boundaryBytes, partStart);
-            if (nextBoundaryStart == -1) nextBoundaryStart = bodyBytes.length;
-            
+            if (nextBoundaryStart == -1)
+                nextBoundaryStart = bodyBytes.length;
+
             // Find the empty line separating headers from content (CRLFCRLF)
             int headerEnd = indexOf(bodyBytes, "\r\n\r\n".getBytes(StandardCharsets.UTF_8), partStart);
             if (headerEnd == -1 || headerEnd >= nextBoundaryStart) {
                 pos = nextBoundaryStart;
                 continue;
             }
-            
+
             // Extract headers as string (safe - headers are always text)
             String headers = new String(bodyBytes, partStart, headerEnd - partStart, StandardCharsets.UTF_8);
-            
+
             // Content starts after CRLFCRLF
             int contentStart = headerEnd + 4;
             // Content ends before CRLF + boundary (subtract 2 for the CRLF before boundary)
             int contentEnd = nextBoundaryStart - 2;
-            if (contentEnd < contentStart) contentEnd = contentStart;
-            
+            if (contentEnd < contentStart)
+                contentEnd = contentStart;
+
             // Parse Content-Disposition header
             String name = null;
             String filename = null;
-            
+
             String[] headerLines = headers.split("\r\n");
             for (String line : headerLines) {
                 if (line.trim().startsWith("Content-Disposition")) {
@@ -131,7 +139,7 @@ public class BookHandler extends BaseHandler {
                     }
                 }
             }
-            
+
             if (name != null) {
                 if (filename != null && !filename.isEmpty()) {
                     // It's a file - extract raw bytes (DO NOT convert to String)
@@ -140,23 +148,24 @@ public class BookHandler extends BaseHandler {
                     parameters.put(name, new FileData(filename, fileInputStream));
                 } else {
                     // It's a text field - safe to convert to String
-                    String textValue = new String(bodyBytes, contentStart, contentEnd - contentStart, StandardCharsets.UTF_8).trim();
+                    String textValue = new String(bodyBytes, contentStart, contentEnd - contentStart,
+                            StandardCharsets.UTF_8).trim();
                     parameters.put(name, textValue);
                 }
             }
-            
+
             pos = nextBoundaryStart;
         }
-        
+
         return parameters;
     }
-    
+
     // Helper method to find byte sequence in byte array
     private int indexOf(byte[] array, byte[] target, int start) {
-        if (target.length == 0) return start;
-        
-        outer:
-        for (int i = start; i <= array.length - target.length; i++) {
+        if (target.length == 0)
+            return start;
+
+        outer: for (int i = start; i <= array.length - target.length; i++) {
             for (int j = 0; j < target.length; j++) {
                 if (array[i + j] != target[j]) {
                     continue outer;
@@ -167,22 +176,21 @@ public class BookHandler extends BaseHandler {
         return -1;
     }
 
-
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String method = exchange.getRequestMethod();
         String path = exchange.getRequestURI().getPath();
-        
+
         switch (method) {
             case "GET" -> {
                 // Matches "/api/books/read/[some number]"
-                if (path.matches("/api/books/read/\\d+")) { 
+                if (path.matches("/api/books/read/\\d+")) {
                     handleReadBook(exchange);
-                // Matches "/api/books/[some number]"
-                } else if (path.matches("/api/books/\\d+")) { 
+                    // Matches "/api/books/[some number]"
+                } else if (path.matches("/api/books/\\d+")) {
                     handleGetSingleBookRequest(exchange);
-                // Matches "/api/books" (for getting the whole list)
-                } else if (path.equals("/api/books")) { 
+                    // Matches "/api/books" (for getting the whole list)
+                } else if (path.equals("/api/books")) {
                     handleGetRequest(exchange);
                 } else {
                     // Handle any other invalid GET requests
@@ -200,42 +208,43 @@ public class BookHandler extends BaseHandler {
         log("→ Processing: Get single book");
         String path = exchange.getRequestURI().getPath();
         String[] parts = path.split("/");
-        Integer bookId = Integer.valueOf(parts[parts.length-1]);
+        Integer bookId = Integer.valueOf(parts[parts.length - 1]);
         log("  Book ID requested: " + bookId);
-        
+
         Book searchForBook = bookDAO.findBookById(bookId);
         if (searchForBook != null) {
             log("  ✓ Book found: " + searchForBook.getBookTitle() + " by " + searchForBook.getAuthorName());
         } else {
             log("  ✗ Book not found in database");
         }
-        
+
         String jsonResponse = gson.toJson(searchForBook);
         log("  Sending response with book data");
         sendResponse(exchange, 200, jsonResponse);
     }
-    
+
     private void handleReadBook(HttpExchange exchange) throws IOException {
         log("→ Processing: Read/Download book");
-        String path = exchange.getRequestURI().getPath();
+        
 
         int bookId = -1;
         try {
+            String path = exchange.getRequestURI().getPath();
             String[] parts = path.split("/");
-            bookId = Integer.parseInt(parts[parts.length-1]);
+            bookId = Integer.parseInt(parts[parts.length - 1]);
             log("  Book ID requested: " + bookId);
         } catch (NumberFormatException e) {
             log("  ✗ Invalid book ID format");
-            sendResponse(exchange, 400, "\"{\\\"error\\\":\\\"Invalid book ID\\\"}\"");
+            sendResponse(exchange, 400, "\"{\"error\":\"Invalid book ID\"}\"");
             return;
         }
         Book bookToRead = bookDAO.findBookById(bookId);
         if (bookToRead == null) {
             log("  ✗ Book not found in database");
-            sendResponse(exchange, 404, "\"{\\\"Message\\\":\\\"Book Not Found\\\"}\"");
+            sendResponse(exchange, 404, "\"{\"Message\":\"Book Not Found\"}\"");
             return;
         }
-        
+
         log("  ✓ Book found: " + bookToRead.getBookTitle());
         String filePathStr = bookToRead.getFilePath();
         Path filePath = Paths.get(filePathStr);
@@ -248,7 +257,7 @@ public class BookHandler extends BaseHandler {
             return;
         }
 
-        //try to get file's size/type for the ResponseHeader
+        // try to get file's size/type for the ResponseHeader
         try {
             String filename = filePath.getFileName().toString();
             long fileSize = Files.size(filePath);
@@ -256,6 +265,13 @@ public class BookHandler extends BaseHandler {
             log("  MIME type: " + getMimeType(filename));
 
             exchange.getResponseHeaders().set("Content-Type", getMimeType(filename));
+
+            // Add custom header to inform client about highlights endpoint
+            // Client can fetch highlights from: GET
+            // http://localhost:8082/user/books/{bookId}/highlights
+            exchange.getResponseHeaders().set("X-Highlights-URL",
+                    "http://localhost:8082/user/books/" + bookId + "/highlights");
+            
             exchange.sendResponseHeaders(200, fileSize);
 
             // 4. Get the response body stream and copy the file directly to it
@@ -283,7 +299,7 @@ public class BookHandler extends BaseHandler {
     private void handlePostRequest(HttpExchange exchange) throws IOException {
         log("→ Processing: Upload new book");
 
-        //check if user is logged in/authorized
+        // check if user is logged in/authorized
         Integer uploaderId = getUserIdFromRequest(exchange);
         if (uploaderId == null) {
             log("  ✗ Unauthorized - no valid user");
@@ -291,13 +307,12 @@ public class BookHandler extends BaseHandler {
             return;
         }
         log("  User ID: " + uploaderId);
-        
 
         // get Parsed data from post request
         log("  Parsing multipart form data...");
-        Map<String,Object> dataParsed = parseMultipartFormData(exchange);
+        Map<String, Object> dataParsed = parseMultipartFormData(exchange);
 
-        //validation all the feild
+        // validation all the feild
         Object titleObj = dataParsed.get("title");
         if (titleObj == null || titleObj.toString().trim().isEmpty()) {
             log("  ✗ Missing book title");
@@ -326,39 +341,40 @@ public class BookHandler extends BaseHandler {
             return;
         }
 
-        //check the extension
+        // check the extension
         String originalFileName = parsedFile.filename;
         log("  Original filename: " + originalFileName);
-        
+
         int dotIndex = originalFileName.lastIndexOf('.');
         String extension = (dotIndex > 0) ? originalFileName.substring(dotIndex).toLowerCase() : "";
         if (extension.isEmpty() || !ALLOWED_EXTENSIONS.contains(extension)) {
             log("  ✗ Invalid file type: " + extension);
-            sendResponse(exchange, 400, "{\"error\":\"Invalid file type. Allowed types are: " + ALLOWED_EXTENSIONS + "\"}");
+            sendResponse(exchange, 400,
+                    "{\"error\":\"Invalid file type. Allowed types are: " + ALLOWED_EXTENSIONS + "\"}");
             return;
         }
         log("  ✓ File type valid: " + extension);
 
-        //make a unique_name ?
+        // make a unique_name ?
         String uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
         log("  Unique filename: " + uniqueFileName);
 
         Path filePath = Paths.get(UPLOAD_DIR, uniqueFileName);
 
-        //save the file in the server
+        // save the file in the server
         try {
             log("  Saving file to disk...");
             Files.copy(parsedFile.content, filePath);
             log("  ✓ File saved: " + filePath.toString());
         } catch (IOException e) {
             log("  ✗ Failed to save file: " + e.getMessage());
-            System.out.println("Failed to save uploaded file: "+e.getMessage());
+            System.out.println("Failed to save uploaded file: " + e.getMessage());
             sendResponse(exchange, 500, "{\"error\":\"Could not save file on the server.\"}");
             return;
         }
 
-        //create new book to store in database
-        Book newBook = new Book(bookTitle,bookAuthor,filePath.toString(),publishedDate);
+        // create new book to store in database
+        Book newBook = new Book(bookTitle, bookAuthor, filePath.toString(), publishedDate);
         try {
             log("  Adding book to database...");
             bookDAO.addBook(newBook, uploaderId);
@@ -367,11 +383,11 @@ public class BookHandler extends BaseHandler {
             sendResponse(exchange, 201, jsonResponse);
         } catch (IOException e) {
             System.err.println("Database error when adding book: " + e.getMessage());
-            Files.deleteIfExists(filePath); 
+            Files.deleteIfExists(filePath);
             sendResponse(exchange, 500, "{\"error\":\"Could not save book record to database.\"}");
         }
     }
-    
+
     private void handleDeleteRequest(HttpExchange exchange) throws IOException {
         log("→ Processing: Delete book");
         String path = exchange.getRequestURI().getPath();
@@ -379,14 +395,13 @@ public class BookHandler extends BaseHandler {
         int bookId = -1;
         try {
             String[] parts = path.split("/");
-            bookId = Integer.parseInt(parts[parts.length-1]);
+            bookId = Integer.parseInt(parts[parts.length - 1]);
             log("  Book ID to delete: " + bookId);
         } catch (NumberFormatException e) {
             log("  ✗ Invalid book ID format");
-            sendResponse(exchange, 400, "\"{\\\"error\\\":\\\"Invalid book ID in URL.\\\"}\"");
+            sendResponse(exchange, 400, "\"{\"error\":\"Invalid book ID in URL.\"}\"");
             return;
         }
-
 
         Book bookToDelete = bookDAO.findBookById(bookId);
         if (bookToDelete == null) {
@@ -395,7 +410,6 @@ public class BookHandler extends BaseHandler {
             return;
         }
         log("  Book found: " + bookToDelete.getBookTitle());
-
 
         // Is the user logged in?
         Integer userId = getUserIdFromRequest(exchange);
@@ -406,7 +420,7 @@ public class BookHandler extends BaseHandler {
         }
         log("  User ID: " + userId);
 
-        //Does the logged-in user own this book?
+        // Does the logged-in user own this book?
         if (bookToDelete.getUploaderId() != userId) {
             log("  ✗ User doesn't own this book (owner: " + bookToDelete.getUploaderId() + ")");
             sendResponse(exchange, 403, "{\"error\":\"Forbidden: You do not have permission to delete this book.\"}");
@@ -414,9 +428,8 @@ public class BookHandler extends BaseHandler {
         }
         log("  ✓ User owns this book");
 
-
         try {
-            //get the file path
+            // get the file path
             String filePathStr = bookToDelete.getFilePath();
             Path filePath = Paths.get(filePathStr);
             log("  File path: " + filePathStr);
@@ -446,19 +459,17 @@ public class BookHandler extends BaseHandler {
         try {
             String path = exchange.getRequestURI().getPath();
             String[] parts = path.split("/");
-            bookId = Integer.parseInt(parts[parts.length-1]);
+            bookId = Integer.parseInt(parts[parts.length - 1]);
         } catch (NumberFormatException e) {
             sendResponse(exchange, 400, "\"{\"error\":\"Invalid book ID in URL.\"}\"");
             return;
         }
-
 
         Book bookToUpdate = bookDAO.findBookById(bookId);
         if (bookToUpdate == null) {
             sendResponse(exchange, 404, "{\"error\":\"Book not found\"}");
             return;
         }
-
 
         // Is the user logged in?
         Integer userId = getUserIdFromRequest(exchange);
@@ -467,7 +478,7 @@ public class BookHandler extends BaseHandler {
             return;
         }
 
-        //Does the logged-in user own this book?
+        // Does the logged-in user own this book?
         if (bookToUpdate.getUploaderId() != userId) {
             sendResponse(exchange, 403, "{\"error\":\"Forbidden: You do not have permission to delete this book.\"}");
             return;
@@ -476,13 +487,13 @@ public class BookHandler extends BaseHandler {
             // READ THE REQUEST BODY to get updated fields
             String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             Book updatedBook = gson.fromJson(requestBody, Book.class);
-            
-            //reserve bookid and userId since they got overwrite
+
+            // reserve bookid and userId since they got overwrite
             updatedBook.setBookId(bookId);
             updatedBook.setUploaderId(userId);
-            
+
             boolean success = bookDAO.updateBook(updatedBook, userId);
-            
+
             if (success) {
                 sendResponse(exchange, 200, "{\"message\":\"Book updated successfully.\"}");
             } else {

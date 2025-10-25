@@ -55,18 +55,18 @@ public class HighlightDAO {
         return highlights;
     }
 
-    public void updateHighlight(Highlight highlight) {
-        String sql = "UPDATE highlight SET page_number = ?, start_pos = ?, end_pos = ? WHERE highlight_id = ?;";
+    public void updateNoteContent(int highlight_id,String newNote) {
+        String sql = "UPDATE highlight SET note_content = ? WHERE highlight_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
-            PreparedStatement query = conn.prepareStatement(sql)){
-            query.setInt(1, highlight.getPageNumber());
-            query.setInt(2, highlight.getStartPos());
-            query.setInt(3,highlight.getEndPos());
-            query.setInt(4,highlight.getHighlightId());
+            PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setString(1, newNote);
+            query.setInt(2,highlight_id);
+            query.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("ERROR updating highlight: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 
     public void deleteHighlight(int highlightId) {
         String sql = "DELETE FROM highlight WHERE highlight_id = ?;";

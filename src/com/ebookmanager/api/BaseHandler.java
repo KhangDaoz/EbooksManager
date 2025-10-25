@@ -10,8 +10,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 public abstract class BaseHandler implements HttpHandler {
-    protected final Gson gson;  // Changed to protected so child classes can access
-    protected final Auth auth;  // Changed to protected so child classes can access
+    protected final Gson gson;  
+    protected final Auth auth;  
 
     public BaseHandler(Auth auth) {
         this.gson = new Gson();

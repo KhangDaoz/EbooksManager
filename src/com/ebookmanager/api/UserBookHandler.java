@@ -88,8 +88,18 @@ public class UserBookHandler extends BaseHandler {
 
         String dateAdded = data.get("dateAdded");
         UserBook userBook = new UserBook(userId, bookId, dateAdded, 0);
-        userBookDAO.addUserBook(userBook);
-        sendResponse(exchange, 201, "{\"message\":\"Book added to user's library\"}");
+        
+        try {
+            userBookDAO.addUserBook(userBook);
+            sendResponse(exchange, 201, "{\"message\":\"Book added to user's library\"}");
+        } catch (Exception e) {
+            // Check if it's a foreign key constraint violation
+            if (e.getMessage() != null && e.getMessage().contains("foreign key constraint")) {
+                sendResponse(exchange, 404, "{\"error\":\"Book not found in the system\"}");
+            } else {
+                sendResponse(exchange, 500, "{\"error\":\"Failed to add book to library: " + e.getMessage() + "\"}");
+            }
+        }
     }
 
     // Handle PUT requests 
