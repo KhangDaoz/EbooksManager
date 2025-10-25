@@ -38,6 +38,11 @@ public class Auth {
         if (userId == null) return null;
         return userDAO.getUserById(userId);
     }
+
+    public User getUserById(int userId) {
+        return userDAO.getUserById(userId);
+    }
+
     public Integer getUserIdFromToken(String token) {
         return sessionManager.getUserIdFromToken(token);
     }
