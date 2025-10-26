@@ -1,14 +1,15 @@
 package com.ebookmanager.api;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
 import com.ebookmanager.dao.HighlightDAO;
 import com.ebookmanager.dao.UserBookDAO;
 import com.ebookmanager.model.Highlight;
 import com.ebookmanager.service.Auth;
 import com.sun.net.httpserver.HttpExchange;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
 
 public class HighlightHandler extends BaseHandler {
     private final HighlightDAO highlightDAO;
@@ -151,83 +152,48 @@ public class HighlightHandler extends BaseHandler {
                 return;
             }
             
-            // Validate required fields
-            if (!data.containsKey("start_pos") || !data.containsKey("end_pos")) {
-                log("  ✗ Missing required fields");
-                sendResponse(exchange, 400, "{\"error\":\"Missing required fields: start_pos and end_pos\"}");
+            // Validate required fields for new schema
+            if (!data.containsKey("location_data")) {
+                log("  ✗ Missing required field: location_data");
+                sendResponse(exchange, 400, "{\"error\":\"Missing required field: location_data (JSON string)\"}");
                 return;
             }
             
-            // Extract and validate highlight data with null/type checks
-            int pageNumber = 0;
-            int startPos = -1;
-            int endPos = -1;
-            
+            String locationData = null;
             try {
-                if (data.containsKey("page_number") && data.get("page_number") != null) {
-                    pageNumber = ((Number) data.get("page_number")).intValue();
-                }
-                
-                if (data.get("start_pos") == null || data.get("end_pos") == null) {
-                    log("  ✗ Null position values");
-                    sendResponse(exchange, 400, "{\"error\":\"Position values cannot be null\"}");
+                Object locationObj = data.get("location_data");
+                if (locationObj == null) {
+                    log("Null location_data");
+                    sendResponse(exchange, 400, "{\"error\":\"location_data cannot be null\"}");
                     return;
                 }
+
+                if (locationObj instanceof String) {
+                    locationData = (String) locationObj;
+                } else {
+                    locationData = gson.toJson(locationObj);
+                }
+
+                log("Location data: " + locationData);
                 
-                startPos = ((Number) data.get("start_pos")).intValue();
-                endPos = ((Number) data.get("end_pos")).intValue();
-                
-            } catch (ClassCastException e) {
-                log("  ✗ Invalid data types for numeric fields");
-                sendResponse(exchange, 400, "{\"error\":\"Invalid data types: positions must be numbers\"}");
+            } catch (Exception e) {
+                log("  ✗  Invalid location_data format");
+                sendResponse(exchange, 400, "{\"error\":\"Invalid location_data format\"}");
                 return;
-            } catch (NullPointerException e) {
-                log("  ✗ Null values in required fields");
-                sendResponse(exchange, 400, "{\"error\":\"Required fields cannot be null\"}");
-                return;
-            }
+            } 
             
             String backgroundColor = "yellow"; // default
-            if (data.containsKey("color") && data.get("color") != null) {
-                backgroundColor = String.valueOf(data.get("color"));
+            if (data.containsKey("background_color") && data.get("background_color") != null) {
+                backgroundColor = String.valueOf(data.get("background_color"));
             }
             
             String noteContent = null;
-            if (data.containsKey("note") && data.get("note") != null) {
-                noteContent = String.valueOf(data.get("note"));
-            }
-            
-            log("  Page: " + pageNumber + ", Start: " + startPos + ", End: " + endPos);
-            
-            // Validate position range
-            if (startPos >= endPos) {
-                log("  ✗ Invalid range: start >= end");
-                sendResponse(exchange, 400, "{\"error\":\"Invalid range: start_pos must be less than end_pos\"}");
-                return;
-            }
-
-            if (startPos < 0 || endPos < 0) {
-                log("  ✗ Negative position values");
-                sendResponse(exchange, 400, "{\"error\":\"Invalid range: positions must be non-negative\"}");
-                return;
-            }
-            
-            // Get existing highlights for this user and book
-            List<Highlight> existingHighlights = highlightDAO.getHighlightForUserBook(userId, bookId);
-            
-            // Check for EXACT duplicate (same start AND end position on same page)
-            for (Highlight existing : existingHighlights) {
-                if (existing.getPageNumber() == pageNumber && 
-                    existing.getStartPos() == startPos && 
-                    existing.getEndPos() == endPos) {
-                    log("  ✗ Duplicate highlight at same position");
-                    sendResponse(exchange, 409, "{\"error\":\"Highlight already exists at this exact position\"}");
-                    return;
-                }
+            if (data.containsKey("note_content") && data.get("note_content") != null) {
+                noteContent = String.valueOf(data.get("note_content"));
             }
             
             // Create new highlight
-            Highlight newHighlight = new Highlight(userId, bookId, pageNumber, startPos, endPos, backgroundColor, noteContent);
+            Highlight newHighlight = new Highlight(userId, bookId, locationData, backgroundColor, noteContent);
             
             // Save to database
             highlightDAO.createHighlight(newHighlight);

@@ -1,22 +1,31 @@
 package com.ebookmanager.api;
 
-import com.ebookmanager.dao.BookDAO;
-import com.ebookmanager.model.Book;
-import com.ebookmanager.service.Auth;
-import com.sun.net.httpserver.HttpExchange;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import com.ebookmanager.dao.BookDAO;
+import com.ebookmanager.model.Book;
+import com.ebookmanager.service.Auth;
+import com.sun.net.httpserver.HttpExchange;
 
 public class BookHandler extends BaseHandler {
     private final BookDAO bookDAO;
     private static final String UPLOAD_DIR = "uploads/";
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            ".pdf", ".epub", ".mobi", ".azw", ".azw3", ".txt", ".djvu", ".fb2"
+            ".pdf", ".epub"
 
     );
 
@@ -27,18 +36,6 @@ public class BookHandler extends BaseHandler {
             return "application/pdf";
         if (lowercased.endsWith(".epub"))
             return "application/epub+zip";
-        if (lowercased.endsWith(".mobi"))
-            return "application/x-mobipocket-ebook";
-        if (lowercased.endsWith(".txt"))
-            return "text/plain";
-        if (lowercased.endsWith(".djvu"))
-            return "image/vnd.djvu";
-        if (lowercased.endsWith(".fb2"))
-            return "application/x-fictionbook+xml";
-        if (lowercased.endsWith(".azw") || lowercased.endsWith(".azw3")) {
-            return "application/vnd.amazon.ebook";
-        }
-
         return "application/octet-stream";
     }
 
@@ -354,6 +351,10 @@ public class BookHandler extends BaseHandler {
             return;
         }
         log("  ✓ File type valid: " + extension);
+        
+        // Determine format from extension
+        String format = extension.equalsIgnoreCase(".pdf") ? "PDF" : "EPUB";
+        log("  Book format: " + format);
 
         // make a unique_name ?
         String uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
@@ -373,8 +374,8 @@ public class BookHandler extends BaseHandler {
             return;
         }
 
-        // create new book to store in database
-        Book newBook = new Book(bookTitle, bookAuthor, filePath.toString(), publishedDate);
+        // create new book to store in database (now includes format)
+        Book newBook = new Book(bookTitle, bookAuthor, format, filePath.toString(), publishedDate);
         try {
             log("  Adding book to database...");
             bookDAO.addBook(newBook, uploaderId);
