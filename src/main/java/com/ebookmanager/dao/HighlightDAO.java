@@ -1,7 +1,5 @@
 // package com.ebookmanager.dao;
 
-// import com.ebookmanager.db.DatabaseConnector;
-// import com.ebookmanager.model.Highlight;
 // import java.sql.Connection;
 // import java.sql.PreparedStatement;
 // import java.sql.ResultSet;
@@ -9,19 +7,20 @@
 // import java.util.ArrayList;
 // import java.util.List;
 
+// import com.ebookmanager.db.DatabaseConnector;
+// import com.ebookmanager.model.Highlight;
+
 
 // public class HighlightDAO {
 //     public void createHighlight(Highlight highlight) {
-//         String sql = "INSERT INTO highlight (user_id, book_id, page_number, start_pos, end_pos, background_color, note_content) VALUES (?,?,?,?,?,?,?);";
+//         String sql = "INSERT INTO highlight (user_id, book_id, location_data, background_color, note_content) VALUES (?,?,?,?,?);";
 //         try (Connection conn = DatabaseConnector.getConnection();
 //             PreparedStatement query = conn.prepareStatement(sql)) {
 //             query.setInt(1, highlight.getUserId());
 //             query.setInt(2, highlight.getBookId());
-//             query.setInt(3, highlight.getPageNumber());
-//             query.setInt(4, highlight.getStartPos());
-//             query.setInt(5, highlight.getEndPos());
-//             query.setString(7,highlight.getBackgroundColor());
-//             query.setString(6, highlight.getNoteContent());
+//             query.setString(3, highlight.getLocationData());
+//             query.setString(4,highlight.getBackgroundColor());
+//             query.setString(5, highlight.getNoteContent());
 //             query.executeUpdate();
 //         } catch (SQLException e) {
 //             System.err.println("ERROR creating highlight: " + e.getMessage());
@@ -40,9 +39,7 @@
 //                 Highlight highlight = new Highlight (
 //                     res.getInt("user_id"),
 //                     res.getInt("book_id"),
-//                     res.getInt("page_number"),
-//                     res.getInt("start_pos"),
-//                     res.getInt("end_pos"),
+//                     res.getString("location_data"),
 //                     res.getString("background_color"),
 //                     res.getString("note_content")
 //                 );
@@ -68,15 +65,15 @@
 //     }
 
 
-//     public void deleteHighlight(int highlightId) {
-//         String sql = "DELETE FROM highlight WHERE highlight_id = ?;";
-//         try (Connection conn = DatabaseConnector.getConnection();
-//             PreparedStatement query = conn.prepareStatement(sql)) {
-//             query.setInt(1,highlightId);
-//             query.executeUpdate(sql);
-//         } catch (SQLException e) {
-//             System.out.println("ERROR deleting highlight: " + e.getMessage());
-//         }
-//     }
+    // public void deleteHighlight(int highlightId) {
+    //     String sql = "DELETE FROM highlight WHERE highlight_id = ?;";
+    //     try (Connection conn = DatabaseConnector.getConnection();
+    //         PreparedStatement query = conn.prepareStatement(sql)) {
+    //         query.setInt(1,highlightId);
+    //         query.executeUpdate();
+    //     } catch (SQLException e) {
+    //         System.out.println("ERROR deleting highlight: " + e.getMessage());
+    //     }
+    // }
 
 // }

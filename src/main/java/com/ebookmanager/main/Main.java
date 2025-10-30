@@ -7,21 +7,8 @@ import com.ebookmanager.dao.UserDAO;
 import com.ebookmanager.service.Auth;
 import com.ebookmanager.service.SessionManager;
 import com.sun.net.httpserver.HttpServer;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.Scanner;
 
-/**
- * Test class for UserHandler and BookHandler APIs
- * Tests registration, login, logout, and book management endpoints
- */
 public class Main {
 
     private static final String BASE_URL = "http://localhost:8080";
@@ -31,60 +18,82 @@ public class Main {
     private static String currentToken = null;
 
     public static void main(String[] args) {
-        System.out.println("=================================================");
-        System.out.println("   API Testing Tool");
-        System.out.println("=================================================\n");
+        System.out.println("EbooksManager Server v1.0");
+        System.out.println();
 
-        // Create shared instances
         UserDAO userDAO;
         try {
+            System.out.println("Initializing database connection...");
             userDAO = new UserDAO();
+            System.out.println("Database connection established");
         } catch (Exception e) {
-            System.err.println("Failed to initialize UserDAO: " + e.getMessage());
+            System.err.println("Failed to initialize database: " + e.getMessage());
             e.printStackTrace();
             return;
         }
 
-        SessionManager sessionManager = new SessionManager(); // Shared!
-        Auth auth = new Auth(userDAO, sessionManager); // Shared!
+        SessionManager sessionManager = new SessionManager();
+        Auth auth = new Auth(userDAO, sessionManager);
+        System.out.println("Authentication services ready");
+        System.out.println();
 
-        // Start UserHandler server in a separate thread
+        System.out.println("Starting HTTP servers...");
+        
+        startUserServer(auth);
+        startBookServer(auth);
+        startHighlightServer(auth);
+        startUserBookServer(auth);
+
+        System.out.println();
+        System.out.println("All servers started successfully!");
+        System.out.println("  User API:       http://localhost:8080/api/users");
+        System.out.println("  Book API:       http://localhost:8081/api/books");
+        System.out.println("  Highlight API:  http://localhost:8082/api/user/books/{bookId}/highlights");
+        System.out.println("  UserBook API:   http://localhost:8083/api/users/books");
+        System.out.println();
+        System.out.println("Press Ctrl+C to stop");
+
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            System.out.println("Servers stopped");
+        }
+    }
+
+    private static void startUserServer(Auth auth) {
         Thread serverThread = new Thread(() -> {
             try {
-                // Create HTTP server for UserHandler on port 8080
                 HttpServer userServer = HttpServer.create(new InetSocketAddress(8080), 0);
                 UserHandler userHandler = new UserHandler(auth);
                 userServer.createContext("/api/users", userHandler);
                 userServer.createContext("/api/sessions", userHandler);
-                
                 userServer.setExecutor(null);
-                System.out.println("Starting UserHandler server on port 8080...\n");
                 userServer.start();
+                System.out.println("UserHandler server started on port 8080");
             } catch (Exception e) {
                 System.err.println("Failed to start UserHandler server: " + e.getMessage());
-                e.printStackTrace();
             }
         });
-
-        serverThread.setDaemon(true);
+        serverThread.setDaemon(false);
         serverThread.start();
+    }
 
-        // Start BookHandler in another thread on port 8081
-        Thread bookServerThread = new Thread(() -> {
+    private static void startBookServer(Auth auth) {
+        Thread serverThread = new Thread(() -> {
             try {
-                // Create HTTP server for BookHandler on port 8081
                 HttpServer bookServer = HttpServer.create(new InetSocketAddress(8081), 0);
-                BookHandler bookHandler = new BookHandler(auth); // Uses same auth instance!
+                BookHandler bookHandler = new BookHandler(auth);
                 bookServer.createContext("/api/books", bookHandler);
-
                 bookServer.setExecutor(null);
-                System.out.println("Starting BookHandler server on port 8081...\n");
                 bookServer.start();
+                System.out.println("BookHandler server started on port 8081");
             } catch (Exception e) {
                 System.err.println("Failed to start BookHandler server: " + e.getMessage());
-                e.printStackTrace();
             }
         });
+        serverThread.setDaemon(false);
+        serverThread.start();
+    }
 
         bookServerThread.setDaemon(true);
         bookServerThread.start();
@@ -92,17 +101,14 @@ public class Main {
         // Start UserBookHandler in another thread on port 8083
         Thread userBookServerThread = new Thread(() -> {
             try {
-                // Create HTTP server for UserBookHandler on port 8083
                 HttpServer userBookServer = HttpServer.create(new InetSocketAddress(8083), 0);
-                UserBookHandler userBookHandler = new UserBookHandler(auth); // Uses same auth instance!
+                UserBookHandler userBookHandler = new UserBookHandler(auth);
                 userBookServer.createContext("/api/users/books", userBookHandler);
-
                 userBookServer.setExecutor(null);
-                System.out.println("Starting UserBookHandler server on port 8083...\n");
                 userBookServer.start();
+                System.out.println("UserBookHandler server started on port 8083");
             } catch (Exception e) {
                 System.err.println("Failed to start UserBookHandler server: " + e.getMessage());
-                e.printStackTrace();
             }
         });
 

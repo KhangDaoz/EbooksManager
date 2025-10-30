@@ -4,15 +4,16 @@ public class Book {
     private int bookId;
     private String bookTitle;
     private String authorName;
+    private String format; // epub or pdf
     private String filePath;
     private String publishDate;
     private int uploaderId;
     
     public Book() {}
 
-    public Book(int bookId, String bookTitle, String authorName,
+    public Book(int bookId, String bookTitle, String authorName,String format,
                 String filePath, String publishDate, int uploaderId) {
-        if(bookId < 0 || bookTitle.isEmpty() || authorName.isEmpty() || filePath.isEmpty() || publishDate.isEmpty() || uploaderId < 0) {
+        if(bookId < 0 || bookTitle.isEmpty() || authorName.isEmpty() || filePath.isEmpty() || publishDate.isEmpty() || uploaderId < 0 || format.isEmpty()) {
             throw new IllegalArgumentException("Invalid argument(s) for Book constructor");
         }
         this.bookId = bookId;
@@ -21,17 +22,20 @@ public class Book {
         this.filePath = filePath;
         this.publishDate = publishDate;
         this.uploaderId = uploaderId;
+        this.format = format;
+                    
     }
-
-    public Book(String bookTitle, String authorName, String filePath, 
-                String publishDate) {
-        if(bookTitle.isEmpty() || authorName.isEmpty() || filePath.isEmpty() || publishDate.isEmpty()) {
+        
+    public Book(String bookTitle, String authorName,String format,
+                String filePath, String publishDate) {
+        if(bookTitle.isEmpty() || authorName.isEmpty() || filePath.isEmpty() || publishDate.isEmpty() || format.isEmpty()) {
             throw new IllegalArgumentException("Invalid argument(s) for Book constructor");
         }
         this.bookTitle = bookTitle;
         this.authorName = authorName;
         this.filePath = filePath;
         this.publishDate = publishDate;
+        this.format = format;
     }
 
     public int getBookId() {    
@@ -99,5 +103,9 @@ public class Book {
         }
         this.uploaderId = uploaderId;
     }
+
+    public String getFormat() {
+        return this.format;
+    } 
     
 }
