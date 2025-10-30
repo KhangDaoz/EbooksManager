@@ -1,7 +1,6 @@
 package com.ebookmanager.main;
 
 import com.ebookmanager.api.BookHandler;
-import com.ebookmanager.api.HighlightHandler;
 import com.ebookmanager.api.UserBookHandler;
 import com.ebookmanager.api.UserHandler;
 import com.ebookmanager.dao.UserDAO;
@@ -27,7 +26,6 @@ public class Main {
 
     private static final String BASE_URL = "http://localhost:8080";
     private static final String BOOK_API_URL = "http://localhost:8081/api/books";
-    private static final String HIGHLIGHT_API_URL = "http://localhost:8082/user/books";
     private static final String USERBOOK_API_URL = "http://localhost:8083/api/users/books";
     private static Scanner scanner = new Scanner(System.in);
     private static String currentToken = null;
@@ -90,26 +88,6 @@ public class Main {
 
         bookServerThread.setDaemon(true);
         bookServerThread.start();
-
-        // Start HighlightHandler in another thread on port 8082
-        Thread highlightServerThread = new Thread(() -> {
-            try {
-                // Create HTTP server for HighlightHandler on port 8082
-                HttpServer highlightServer = HttpServer.create(new InetSocketAddress(8082), 0);
-                HighlightHandler highlightHandler = new HighlightHandler(auth); // Uses same auth instance!
-                highlightServer.createContext("/user/books", highlightHandler);
-
-                highlightServer.setExecutor(null);
-                System.out.println("Starting HighlightHandler server on port 8082...\n");
-                highlightServer.start();
-            } catch (Exception e) {
-                System.err.println("Failed to start HighlightHandler server: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
-
-        highlightServerThread.setDaemon(true);
-        highlightServerThread.start();
 
         // Start UserBookHandler in another thread on port 8083
         Thread userBookServerThread = new Thread(() -> {
@@ -175,31 +153,16 @@ public class Main {
                         testUpdateBook();
                         break;
                     case 10:
-                        testGetHighlights();
-                        break;
-                    case 11:
-                        testAddHighlight();
-                        break;
-                    case 12:
-                        testUpdateHighlight();
-                        break;
-                    case 13:
-                        testDeleteHighlight();
-                        break;
-                    case 14:
                         testGetUserBooks();
                         break;
-                    case 15:
+                    case 11:
                         testAddBookToLibrary();
                         break;
-                    case 16:
+                    case 12:
                         testUpdateReadingProgress();
                         break;
-                    case 17:
+                    case 13:
                         testRemoveBookFromLibrary();
-                        break;
-                    case 18:
-                        testReadBookWithHighlights();
                         break;
                     case 0:
                         running = false;
@@ -243,20 +206,11 @@ public class Main {
         System.out.println("8. Test Delete Book (DELETE /api/books/{id})");
         System.out.println("9. Test Update Book (PUT /api/books/{id})");
         System.out.println();
-        System.out.println("HIGHLIGHT API (port 8082):");
-        System.out.println("10. Test Get Highlights (GET /user/books/{bookId}/highlights)");
-        System.out.println("11. Test Add Highlight (POST /user/books/{bookId}/highlights)");
-        System.out.println("12. Test Update Highlight Note (PUT /user/books/{bookId}/highlights)");
-        System.out.println("13. Test Delete Highlight (DELETE /user/books/{bookId}/highlights)");
-        System.out.println();
         System.out.println("USER LIBRARY API (port 8083):");
-        System.out.println("14. Test Get User's Library (GET /api/users/books)");
-        System.out.println("15. Test Add Book to Library (POST /api/users/books/{bookId})");
-        System.out.println("16. Test Update Reading Progress (PUT /api/users/books/{bookId}/progress)");
-        System.out.println("17. Test Remove Book from Library (DELETE /api/users/books/{bookId})");
-        System.out.println();
-        System.out.println("INTEGRATED TESTS:");
-        System.out.println("18. Test Read Book with Highlights (simulates opening a book)");
+        System.out.println("10. Test Get User's Library (GET /api/users/books)");
+        System.out.println("11. Test Add Book to Library (POST /api/users/books/{bookId})");
+        System.out.println("12. Test Update Reading Progress (PUT /api/users/books/{bookId}/progress)");
+        System.out.println("13. Test Remove Book from Library (DELETE /api/users/books/{bookId})");
         System.out.println();
         System.out.println("0. Exit");
         System.out.println("=================================================");
@@ -521,172 +475,6 @@ public class Main {
     }
 
     /**
-     * Test get highlights for a book
-     */
-    private static void testGetHighlights() throws Exception {
-        System.out.println("\n--- Testing Get Highlights API ---");
-
-        if (currentToken == null) {
-            System.out.println("✗ No token stored. Please login first (option 2).");
-            return;
-        }
-
-        System.out.print("Enter book ID: ");
-        String bookId = scanner.nextLine();
-
-        String url = HIGHLIGHT_API_URL + "/" + bookId + "/highlights";
-        HttpResponse response = sendRequest("GET", url, null, currentToken);
-
-        System.out.println("\n✓ Response Status: " + response.statusCode);
-        System.out.println("✓ Response Body: " + response.body);
-
-        if (response.statusCode == 200) {
-            System.out.println("✓ Successfully retrieved highlights!");
-        } else if (response.statusCode == 401) {
-            System.out.println("✗ Unauthorized - please login first");
-        } else if (response.statusCode == 403) {
-            System.out.println("✗ Book not in your library");
-        } else {
-            System.out.println("✗ Unexpected response");
-        }
-    }
-
-    /**
-     * Test add highlight to a book
-     */
-    private static void testAddHighlight() throws Exception {
-        System.out.println("\n--- Testing Add Highlight API ---");
-
-        if (currentToken == null) {
-            System.out.println("✗ No token stored. Please login first (option 2).");
-            return;
-        }
-
-        System.out.print("Enter book ID: ");
-        String bookId = scanner.nextLine();
-        System.out.print("Enter page number: ");
-        String pageNumber = scanner.nextLine();
-        System.out.print("Enter start position: ");
-        String startPos = scanner.nextLine();
-        System.out.print("Enter end position: ");
-        String endPos = scanner.nextLine();
-        System.out.print("Enter color (default: yellow): ");
-        String color = scanner.nextLine();
-        if (color.isEmpty()) color = "yellow";
-        System.out.print("Enter note (optional): ");
-        String note = scanner.nextLine();
-
-        String jsonPayload;
-        if (note.isEmpty()) {
-            jsonPayload = String.format(
-                "{\"page_number\":%s,\"start_pos\":%s,\"end_pos\":%s,\"color\":\"%s\"}",
-                pageNumber, startPos, endPos, color);
-        } else {
-            jsonPayload = String.format(
-                "{\"page_number\":%s,\"start_pos\":%s,\"end_pos\":%s,\"color\":\"%s\",\"note\":\"%s\"}",
-                pageNumber, startPos, endPos, color, note);
-        }
-
-        String url = HIGHLIGHT_API_URL + "/" + bookId + "/highlights";
-        HttpResponse response = sendRequest("POST", url, jsonPayload, currentToken);
-
-        System.out.println("\n✓ Response Status: " + response.statusCode);
-        System.out.println("✓ Response Body: " + response.body);
-
-        if (response.statusCode == 201) {
-            System.out.println("✓ Highlight added successfully!");
-        } else if (response.statusCode == 400) {
-            System.out.println("✗ Bad request - check your input");
-        } else if (response.statusCode == 401) {
-            System.out.println("✗ Unauthorized - please login first");
-        } else if (response.statusCode == 403) {
-            System.out.println("✗ Book not in your library");
-        } else if (response.statusCode == 409) {
-            System.out.println("✗ Highlight already exists at this position");
-        } else {
-            System.out.println("✗ Failed to add highlight");
-        }
-    }
-
-    /**
-     * Test update highlight note
-     */
-    private static void testUpdateHighlight() throws Exception {
-        System.out.println("\n--- Testing Update Highlight Note API ---");
-
-        if (currentToken == null) {
-            System.out.println("✗ No token stored. Please login first (option 2).");
-            return;
-        }
-
-        System.out.print("Enter book ID: ");
-        String bookId = scanner.nextLine();
-        System.out.print("Enter highlight ID: ");
-        String highlightId = scanner.nextLine();
-        System.out.print("Enter new note content: ");
-        String noteContent = scanner.nextLine();
-
-        String jsonPayload = String.format(
-            "{\"highlight_id\":%s,\"note_content\":\"%s\"}",
-            highlightId, noteContent);
-
-        String url = HIGHLIGHT_API_URL + "/" + bookId + "/highlights";
-        HttpResponse response = sendRequest("PUT", url, jsonPayload, currentToken);
-
-        System.out.println("\n✓ Response Status: " + response.statusCode);
-        System.out.println("✓ Response Body: " + response.body);
-
-        if (response.statusCode == 200) {
-            System.out.println("✓ Highlight note updated successfully!");
-        } else if (response.statusCode == 400) {
-            System.out.println("✗ Bad request - check your input");
-        } else if (response.statusCode == 401) {
-            System.out.println("✗ Unauthorized - please login first");
-        } else if (response.statusCode == 403) {
-            System.out.println("✗ Forbidden - you don't own this highlight or book not in library");
-        } else {
-            System.out.println("✗ Failed to update highlight");
-        }
-    }
-
-    /**
-     * Test delete highlight
-     */
-    private static void testDeleteHighlight() throws Exception {
-        System.out.println("\n--- Testing Delete Highlight API ---");
-
-        if (currentToken == null) {
-            System.out.println("✗ No token stored. Please login first (option 2).");
-            return;
-        }
-
-        System.out.print("Enter book ID: ");
-        String bookId = scanner.nextLine();
-        System.out.print("Enter highlight ID to delete: ");
-        String highlightId = scanner.nextLine();
-
-        String jsonPayload = String.format("{\"highlight_id\":%s}", highlightId);
-
-        String url = HIGHLIGHT_API_URL + "/" + bookId + "/highlights";
-        HttpResponse response = sendRequest("DELETE", url, jsonPayload, currentToken);
-
-        System.out.println("\n✓ Response Status: " + response.statusCode);
-        System.out.println("✓ Response Body: " + response.body);
-
-        if (response.statusCode == 200) {
-            System.out.println("✓ Highlight deleted successfully!");
-        } else if (response.statusCode == 400) {
-            System.out.println("✗ Bad request - check your input");
-        } else if (response.statusCode == 401) {
-            System.out.println("✗ Unauthorized - please login first");
-        } else if (response.statusCode == 403) {
-            System.out.println("✗ Forbidden - you don't own this highlight or book not in library");
-        } else {
-            System.out.println("✗ Failed to delete highlight");
-        }
-    }
-
-    /**
      * Test get user's library (all books in user's personal library)
      */
     private static void testGetUserBooks() throws Exception {
@@ -819,101 +607,6 @@ public class Main {
             System.out.println("✗ Book not found in your library");
         } else {
             System.out.println("✗ Failed to remove book");
-        }
-    }
-
-    /**
-     * Test 18: Read a book with highlights (Combined Flow)
-     * Simulates opening a book in ReadingGUI where highlights are automatically loaded
-     */
-    private static void testReadBookWithHighlights() {
-        if (currentToken == null) {
-            System.out.println("✗ Please login first!");
-            return;
-        }
-
-        System.out.println("\n=== Test Read Book with Highlights ===");
-        System.out.print("Enter book ID: ");
-        int bookId = scanner.nextInt();
-        scanner.nextLine(); // consume newline
-
-        try {
-            // Step 1: Get the book file and check for highlights URL
-            System.out.println("\n[Step 1] Requesting book file...");
-            String bookUrl = BOOK_API_URL + "/read/" + bookId;
-            
-            URI uri = new URI(bookUrl);
-            HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Authorization", "Bearer " + currentToken);
-            
-            int statusCode = conn.getResponseCode();
-            
-            if (statusCode == 200) {
-                // Get content info
-                String contentType = conn.getHeaderField("Content-Type");
-                String contentDisposition = conn.getHeaderField("Content-Disposition");
-                int contentLength = conn.getContentLength();
-                
-                System.out.println("✓ Book file retrieved successfully!");
-                System.out.println("  Content-Type: " + contentType);
-                System.out.println("  Content-Disposition: " + contentDisposition);
-                System.out.println("  Content-Length: " + contentLength + " bytes");
-                
-                // Step 2: Extract highlights URL from header
-                String highlightsUrl = conn.getHeaderField("X-Highlights-URL");
-                
-                if (highlightsUrl != null && !highlightsUrl.isEmpty()) {
-                    System.out.println("\n[Step 2] Highlights URL found: " + highlightsUrl);
-                    System.out.println("Fetching highlights...");
-                    
-                    // Step 3: Fetch highlights from the provided URL
-                    HttpResponse highlightResponse = sendRequest("GET", highlightsUrl, null, currentToken);
-                    
-                    if (highlightResponse.statusCode == 200) {
-                        System.out.println("✓ Highlights loaded successfully!");
-                        System.out.println("\nHighlights JSON:");
-                        System.out.println(highlightResponse.body);
-                    } else if (highlightResponse.statusCode == 404) {
-                        System.out.println("✓ Book opened successfully (no highlights found)");
-                    } else {
-                        System.out.println("⚠ Book opened but failed to load highlights");
-                        System.out.println("  Status: " + highlightResponse.statusCode);
-                        System.out.println("  Response: " + highlightResponse.body);
-                    }
-                } else {
-                    System.out.println("\n⚠ No X-Highlights-URL header found");
-                    System.out.println("Book opened successfully, but highlights feature may not be available");
-                }
-                
-                // Close the book file stream (in real app, you'd save or display it)
-                conn.getInputStream().close();
-                
-            } else if (statusCode == 401) {
-                System.out.println("✗ Unauthorized - Please login again");
-            } else if (statusCode == 403) {
-                System.out.println("✗ Book not in your library - Add it to your library first");
-            } else if (statusCode == 404) {
-                System.out.println("✗ Book not found");
-            } else {
-                // Read error message
-                BufferedReader br = new BufferedReader(
-                    new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-                StringBuilder errorResponse = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    errorResponse.append(line);
-                }
-                br.close();
-                
-                System.out.println("✗ Failed to read book");
-                System.out.println("  Status: " + statusCode);
-                System.out.println("  Response: " + errorResponse.toString());
-            }
-            
-        } catch (Exception e) {
-            System.out.println("✗ Error: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

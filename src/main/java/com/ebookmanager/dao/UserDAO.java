@@ -53,16 +53,20 @@ public class UserDAO {
         }
     }
 
-    public void updateUserPassword(int user_id, String new_hashed_password) {
+    public boolean updateUserPassword(int user_id, String new_hashed_password) {
         String sql = "UPDATE user SET hashed_password = ? WHERE user_id = ?;";
         try(PreparedStatement query = connection.prepareStatement(sql)) {
             query.setString(1, new_hashed_password);
             query.setInt(2, user_id);
-            query.executeUpdate();
+            int rowsAffected = query.executeUpdate();
+
+            return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("ERROR updating user password: " + e.getMessage());
+            return false;
         }
     }
+    
     public User getUserById(int id) { // for authoriztion when making crud operation to book table
         String sql = "SELECT * FROM user WHERE user_id = ?;";
         try(PreparedStatement query = connection.prepareStatement(sql)) {

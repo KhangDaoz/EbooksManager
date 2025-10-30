@@ -1,30 +1,59 @@
 package com.ebookmanager.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
 import com.ebookmanager.dao.UserDAO;
 import com.ebookmanager.model.User;
-import com.ebookmanager.model.UserManager;
+// import com.ebookmanager.model.UserManager;
+
 
 public class Auth {
     private final UserDAO userDAO;
     private final SessionManager sessionManager;
-    private final UserManager userManager;
+    // private final UserManager userManager;
 
     public Auth(UserDAO userDAO, SessionManager sessionManager) {
+        if(userDAO == null) {
+            throw new IllegalArgumentException("UserDAO cannot be null");   
+        }
+        if(sessionManager == null) {
+            throw new IllegalArgumentException("SessionManager cannot be null");   
+        }
         this.userDAO = userDAO;
         this.sessionManager = sessionManager;
-        this.userManager = new UserManager(userDAO);
+        // this.userManager = new UserManager(userDAO);
     }
 
-    public boolean register(String username, String password) {
-        return userManager.register(username, password);
+    private static String hashedPassword(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if(hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public String login(String username,String password) {
-        if (userManager.login(username, password)) {
-            User user = userManager.getCurrentUser();
-            int userId = user.getUser_id();
-            userManager.logout();
-            return sessionManager.createSession(userId);
+    public boolean register(String user_name, String password) {
+        if(userDAO.findUserByName(user_name) != null) {
+            return false; 
+        }
+        User newUser = new User(0, user_name, hashedPassword(password));
+        userDAO.addUser(newUser);
+        return true;
+    }
+
+    public String login(String user_name, String password) {
+        User user = userDAO.findUserByName(user_name);
+        if(user != null && user.getHashed_password().equals(hashedPassword(password))) {
+            return sessionManager.createSession(user.getUser_id());
         }
         return null;
     }
@@ -52,17 +81,13 @@ public class Auth {
     }
 
     // Change password using UserManager
-    public boolean changePassword(int userId, String oldPassword, String newPassword) {
+    public boolean changePassword(int userId, String old_password, String new_password) {
         User user = userDAO.getUserById(userId);
-        if (user == null) return false;
-        
-        // Temporarily login to use UserManager's changePassword
-        if (userManager.login(user.getUser_name(), oldPassword)) {
-            boolean success = userManager.changePassword(oldPassword, newPassword);
-            userManager.logout();
-            return success;
+        if(user != null && user.getHashed_password().equals(hashedPassword(old_password))) {
+            String new_hashed_password = hashedPassword(new_password);
+            return userDAO.updateUserPassword(user.getUser_id(), new_hashed_password);
         }
-        return false;
+        return false; 
     }
 
     // Delete user and all their sessions

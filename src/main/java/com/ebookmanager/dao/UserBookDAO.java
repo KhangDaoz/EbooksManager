@@ -108,32 +108,6 @@ public class UserBookDAO {
         return userBooks;
     }
 
-    // // Take progress of book in user List
-    // public float getProgress(int user_id, Book book)
-    // {
-    //     String sql = "SELECT reading_progress FROM user_books"
-    //     + "WHERE user_id= ? and book_id= ? ;";
-    //     try
-    //     (
-    //         Connection conn = DatabaseConnector.getConnection();
-    //         PreparedStatement stm = conn.prepareStatement(sql) 
-    //     )
-    //     {
-    //         stm.setInt(1, user_id);
-    //         stm.setInt(2, book.getBookId());
-    //         ResultSet rs = stm.executeQuery();
-    //         float progress = 0.0f;
-    //         while(rs.next())
-    //         {
-    //             progress = rs.getFloat("reading_progress");
-    //         }
-    //         return progress;
-    //     } catch (SQLException ex) {
-    //         ex.printStackTrace();
-    //     }
-    //     return 0.0f;
-    // }    
-
     public void updateProgress(int user_id, int book_id, float progress)
     {
         String sql = "UPDATE user_books SET reading_progress = ?"
@@ -154,61 +128,4 @@ public class UserBookDAO {
             ex.printStackTrace();
         }
     }
-
-    // public boolean findBook(int user_id, Book book)
-    // {
-    //     String sql = "SELECT book_id FROM user_books "
-    //     + "WHERE user_id = ? AND book_id = ? ;";
-    //     try
-    //     (
-    //         Connection conn = DatabaseConnector.getConnection();
-    //         PreparedStatement stm = conn.prepareStatement(sql);
-    //     ) 
-    //     {
-    //         stm.setInt(1, user_id);
-    //         stm.setInt(2, book.getBookId());
-    //         ResultSet rs = stm.executeQuery();
-
-    //         int cnt = 0;
-    //         while(rs.next())
-    //         {
-    //             cnt ++;
-    //             if(cnt>0)
-    //             {
-    //                 return false;
-    //             }
-    //         }
-    //         if(cnt == 0) return true;
-    //     } catch (SQLException e) {
-    //         e.printStackTrace();
-    //     }
-    //     return false;
-    // }
-
-    // public void addBook(Book book, int user_id)
-    // {
-    //     if(findBook(user_id, book))
-    //     {
-    //         String sql = "INSERT INTO user_books (user_id, book_id) VALUES"
-    //         + "(?, ?);";
-    //         try
-    //         (
-
-    //             Connection conn = DatabaseConnector.getConnection();
-    //             PreparedStatement stm = conn.prepareStatement(sql)
-    //         )
-    //         {
-    //             stm.setInt(1, user_id);
-    //             stm.setInt(2, book.getBookId());
-    //             stm.executeUpdate();
-    //         } catch (SQLException e) {
-                
-    //             e.printStackTrace();
-    //         }
-    //     }
-    //     else
-    //     {
-    //         System.out.println("Book existed");
-    //     }
-    // }
 }
