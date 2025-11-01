@@ -175,29 +175,39 @@ public class BookHandler extends BaseHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        String method = exchange.getRequestMethod();
-        String path = exchange.getRequestURI().getPath();
+        try {
+            String method = exchange.getRequestMethod();
+            String path = exchange.getRequestURI().getPath();
 
-        switch (method) {
-            case "GET" -> {
-                // Matches "/api/books/read/[some number]"
-                if (path.matches("/api/books/read/\\d+")) {
-                    handleReadBook(exchange);
-                    // Matches "/api/books/[some number]"
-                } else if (path.matches("/api/books/\\d+")) {
-                    handleGetSingleBookRequest(exchange);
-                    // Matches "/api/books" (for getting the whole list)
-                } else if (path.equals("/api/books")) {
-                    handleGetRequest(exchange);
-                } else {
-                    // Handle any other invalid GET requests
-                    sendResponse(exchange, 404, "{\"error\":\"Not Found\"}");
+            switch (method) {
+                case "GET" -> {
+                    // Matches "/api/books/read/[some number]"
+                    if (path.matches("/api/books/read/\\d+")) {
+                        handleReadBook(exchange);
+                        // Matches "/api/books/[some number]"
+                    } else if (path.matches("/api/books/\\d+")) {
+                        handleGetSingleBookRequest(exchange);
+                        // Matches "/api/books" (for getting the whole list)
+                    } else if (path.equals("/api/books")) {
+                        handleGetRequest(exchange);
+                    } else {
+                        // Handle any other invalid GET requests
+                        sendResponse(exchange, 404, "{\"error\":\"Not Found\"}");
+                    }
                 }
+                case "DELETE" -> handleDeleteRequest(exchange);
+                case "POST" -> handlePostRequest(exchange);
+                case "PUT" -> handlePutRequest(exchange);
+                default -> sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
             }
-            case "DELETE" -> handleDeleteRequest(exchange);
-            case "POST" -> handlePostRequest(exchange);
-            case "PUT" -> handlePutRequest(exchange);
-            default -> sendResponse(exchange, 405, "{\"error\":\"Method Not Allowed\"}");
+        } catch (Exception e) {
+            log("✗ CRITICAL ERROR in handle(): " + e.getMessage());
+            e.printStackTrace();
+            try {
+                sendResponse(exchange, 500, "{\"error\":\"Internal server error\"}");
+            } catch (Exception ex) {
+                System.err.println("Failed to send error response: " + ex.getMessage());
+            }
         }
     }
 
@@ -285,12 +295,24 @@ public class BookHandler extends BaseHandler {
     }
 
     private void handleGetRequest(HttpExchange exchange) throws IOException {
-        log("→ Processing: Get all books");
-        List<Book> books = bookDAO.getAllBooks();
-        log("  Found " + books.size() + " books in database");
-        String jsonResponse = gson.toJson(books);
-        log("  Sending book list");
-        sendResponse(exchange, 200, jsonResponse);
+        try {
+            log("→ Processing: Get all books");
+            List<Book> books = bookDAO.getAllBooks();
+            log("  Found " + books.size() + " books in database");
+            String jsonResponse = gson.toJson(books);
+            log("  JSON response length: " + jsonResponse.length() + " characters");
+            log("  Sending book list");
+            sendResponse(exchange, 200, jsonResponse);
+            log("  ✓ Response sent successfully");
+        } catch (Exception e) {
+            log("  ✗ ERROR in handleGetRequest: " + e.getMessage());
+            e.printStackTrace();
+            try {
+                sendResponse(exchange, 500, "{\"error\":\"Internal server error: " + e.getMessage() + "\"}");
+            } catch (IOException ioEx) {
+                log("  ✗ Failed to send error response: " + ioEx.getMessage());
+            }
+        }
     }
 
     private void handlePostRequest(HttpExchange exchange) throws IOException {

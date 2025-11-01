@@ -1,13 +1,5 @@
 package com.ebookmanager.main;
 
-import com.ebookmanager.api.BookHandler;
-import com.ebookmanager.api.UserBookHandler;
-import com.ebookmanager.api.UserHandler;
-import com.ebookmanager.dao.UserDAO;
-import com.ebookmanager.service.Auth;
-import com.ebookmanager.service.SessionManager;
-import com.sun.net.httpserver.HttpServer;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -19,11 +11,24 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Scanner;
 
+import com.ebookmanager.api.BookHandler;
+import com.ebookmanager.api.BookmarkHandler;
+import com.ebookmanager.api.UserBookHandler;
+import com.ebookmanager.api.UserHandler;
+import com.ebookmanager.dao.UserDAO;
+import com.ebookmanager.service.Auth;
+import com.ebookmanager.service.SessionManager;
+import com.sun.net.httpserver.HttpServer;
+
 public class Main {
 
-    private static final String BASE_URL = "http://localhost:8080";
+    // API Base URLs - organized by port
+    private static final String USER_API_URL = "http://localhost:8080/api/users";
+    private static final String SESSION_API_URL = "http://localhost:8080/api/sessions";
     private static final String BOOK_API_URL = "http://localhost:8081/api/books";
+    private static final String BOOKMARK_API_URL = "http://localhost:8082/api/user/books";
     private static final String USERBOOK_API_URL = "http://localhost:8083/api/users/books";
+    
     private static Scanner scanner = new Scanner(System.in);
     private static String currentToken = null;
 
@@ -51,6 +56,7 @@ public class Main {
         
         startUserServer(auth);
         startBookServer(auth);
+        startBookmarkServer(auth);
         startUserBookServer(auth);
 
         // Wait for servers to start
@@ -64,6 +70,7 @@ public class Main {
         System.out.println("All servers started successfully!");
         System.out.println("  User API:       http://localhost:8080/api/users");
         System.out.println("  Book API:       http://localhost:8081/api/books");
+        System.out.println("  Bookmark API:   http://localhost:8082/api/user/books");
         System.out.println("  UserBook API:   http://localhost:8083/api/users/books");
         System.out.println();
 
@@ -114,6 +121,18 @@ public class Main {
                         break;
                     case 13:
                         testRemoveBookFromLibrary();
+                        break;
+                    case 14:
+                        testGetBookmarks();
+                        break;
+                    case 15:
+                        testCreateBookmark();
+                        break;
+                    case 16:
+                        testUpdateBookmark();
+                        break;
+                    case 17:
+                        testDeleteBookmark();
                         break;
                     case 0:
                         running = false;
@@ -192,6 +211,23 @@ public class Main {
         serverThread.start();
     }
 
+    private static void startBookmarkServer(Auth auth) {
+        Thread serverThread = new Thread(() -> {
+            try {
+                HttpServer server = HttpServer.create(new InetSocketAddress(8082), 0);
+                BookmarkHandler bookmarkHandler = new BookmarkHandler(auth);
+                server.createContext("/api/user/books", bookmarkHandler);
+                server.setExecutor(null);
+                server.start();
+                System.out.println("BookmarkHandler server started on port 8082");
+            } catch (Exception e) {
+                System.err.println("Failed to start BookmarkHandler server: " + e.getMessage());
+            }
+        });
+        serverThread.setDaemon(true);
+        serverThread.start();
+    }
+
     private static void displayMenu() {
         System.out.println("\n=================================================");
         System.out.println("              TEST MENU");
@@ -215,6 +251,12 @@ public class Main {
         System.out.println("12. Test Update Reading Progress (PUT /api/users/books/{bookId}/progress)");
         System.out.println("13. Test Remove Book from Library (DELETE /api/users/books/{bookId})");
         System.out.println();
+        System.out.println("BOOKMARK API (port 8082):");
+        System.out.println("14. Test Get Bookmarks (GET /api/user/books/{bookId}/bookmarks)");
+        System.out.println("15. Test Create Bookmark (POST /api/user/books/{bookId}/bookmarks)");
+        System.out.println("16. Test Update Bookmark (PUT /api/user/books/{bookId}/bookmarks/{bookmarkId})");
+        System.out.println("17. Test Delete Bookmark (DELETE /api/user/books/{bookId}/bookmarks/{bookmarkId})");
+        System.out.println();
         System.out.println("0. Exit");
         System.out.println("=================================================");
         System.out.print("Enter your choice: ");
@@ -232,7 +274,7 @@ public class Main {
 
         String jsonPayload = String.format("{\"username\":\"%s\",\"password\":\"%s\"}", username, password);
 
-        HttpResponse response = sendRequest("POST", BASE_URL + "/api/users", jsonPayload, null);
+        HttpResponse response = sendRequest("POST", USER_API_URL, jsonPayload, null);
 
         System.out.println("\n✓ Response Status: " + response.statusCode);
         System.out.println("✓ Response Body: " + response.body);
@@ -258,7 +300,7 @@ public class Main {
 
         String jsonPayload = String.format("{\"username\":\"%s\",\"password\":\"%s\"}", username, password);
 
-        HttpResponse response = sendRequest("POST", BASE_URL + "/api/sessions", jsonPayload, null);
+        HttpResponse response = sendRequest("POST", SESSION_API_URL, jsonPayload, null);
 
         System.out.println("\n✓ Response Status: " + response.statusCode);
         System.out.println("✓ Response Body: " + response.body);
@@ -298,7 +340,7 @@ public class Main {
 
         System.out.println("Using token: " + currentToken);
 
-        HttpResponse response = sendRequest("DELETE", BASE_URL + "/api/sessions", "", currentToken);
+        HttpResponse response = sendRequest("DELETE", SESSION_API_URL, "", currentToken);
 
         System.out.println("\n✓ Response Status: " + response.statusCode);
         System.out.println("✓ Response Body: " + response.body);
@@ -380,10 +422,18 @@ public class Main {
         String publishedDate = scanner.nextLine();
         System.out.print("Enter file path: ");
         String filePath = scanner.nextLine();
+        
+        // Remove surrounding quotes if present
+        filePath = filePath.trim();
+        if ((filePath.startsWith("\"") && filePath.endsWith("\"")) || 
+            (filePath.startsWith("'") && filePath.endsWith("'"))) {
+            filePath = filePath.substring(1, filePath.length() - 1);
+        }
 
         File file = new File(filePath);
         if (!file.exists()) {
             System.out.println("✗ File not found: " + filePath);
+            System.out.println("  (Tried: " + file.getAbsolutePath() + ")");
             return;
         }
 
@@ -610,6 +660,189 @@ public class Main {
             System.out.println("✗ Book not found in your library");
         } else {
             System.out.println("✗ Failed to remove book");
+        }
+    }
+
+    /**
+     * Test get bookmarks for a book
+     */
+    private static void testGetBookmarks() throws Exception {
+        if (currentToken == null) {
+            System.out.println("⚠ Please login first");
+            return;
+        }
+
+        System.out.println("\n--- Testing Get Bookmarks API ---");
+        System.out.print("Enter Book ID: ");
+        String bookId = scanner.nextLine();
+
+        String url = BOOKMARK_API_URL + "/" + bookId + "/bookmarks";
+        HttpResponse response = sendRequest("GET", url, null, currentToken);
+
+        if (response.statusCode == 200) {
+            System.out.println("✓ Bookmarks retrieved successfully:");
+            System.out.println(response.body);
+        } else if (response.statusCode == 401) {
+            System.out.println("✗ Unauthorized - please login first");
+        } else if (response.statusCode == 404) {
+            System.out.println("✗ Book not found");
+        } else {
+            System.out.println("✗ Failed to retrieve bookmarks: " + response.body);
+        }
+    }
+
+    /**
+     * Test create bookmark
+     */
+    private static void testCreateBookmark() throws Exception {
+        if (currentToken == null) {
+            System.out.println("⚠ Please login first");
+            return;
+        }
+
+        System.out.println("\n--- Testing Create Bookmark API ---");
+        System.out.print("Enter Book ID: ");
+        String bookId = scanner.nextLine();
+
+        System.out.print("Is this a PDF or EPUB? (pdf/epub): ");
+        String format = scanner.nextLine().toLowerCase();
+
+        String locationData;
+        if (format.equals("pdf")) {
+            System.out.print("Enter page index (e.g., 5): ");
+            String pageIndex = scanner.nextLine();
+            System.out.print("Enter scroll Y position (optional, press Enter to skip): ");
+            String scrollY = scanner.nextLine();
+            
+            if (scrollY.isEmpty()) {
+                locationData = String.format("{\"pageIndex\":%s}", pageIndex);
+            } else {
+                locationData = String.format("{\"pageIndex\":%s,\"scrollY\":%s}", pageIndex, scrollY);
+            }
+        } else {
+            System.out.print("Enter spine index (e.g., 3): ");
+            String spineIndex = scanner.nextLine();
+            System.out.print("Enter CFI range (e.g., epubcfi(/6/4[chap01ref]!/4/2/1:0)): ");
+            String cfiRange = scanner.nextLine();
+            System.out.print("Enter percentage (0-100, optional, press Enter to skip): ");
+            String percentage = scanner.nextLine();
+            
+            if (percentage.isEmpty()) {
+                locationData = String.format("{\"spineIndex\":%s,\"cfiRange\":\"%s\"}", spineIndex, cfiRange);
+            } else {
+                locationData = String.format("{\"spineIndex\":%s,\"cfiRange\":\"%s\",\"percentage\":%s}", 
+                    spineIndex, cfiRange, percentage);
+            }
+        }
+
+        String jsonPayload = String.format("{\"bookId\":\"%s\",\"location_data\":%s}", bookId, locationData);
+        String url = BOOKMARK_API_URL + "/" + bookId + "/bookmarks";
+        HttpResponse response = sendRequest("POST", url, jsonPayload, currentToken);
+
+        if (response.statusCode == 201) {
+            System.out.println("✓ Bookmark created successfully:");
+            System.out.println(response.body);
+        } else if (response.statusCode == 400) {
+            System.out.println("✗ Invalid bookmark data: " + response.body);
+        } else if (response.statusCode == 401) {
+            System.out.println("✗ Unauthorized - please login first");
+        } else if (response.statusCode == 404) {
+            System.out.println("✗ Book not found");
+        } else {
+            System.out.println("✗ Failed to create bookmark: " + response.body);
+        }
+    }
+
+    /**
+     * Test update bookmark
+     */
+    private static void testUpdateBookmark() throws Exception {
+        if (currentToken == null) {
+            System.out.println("⚠ Please login first");
+            return;
+        }
+
+        System.out.println("\n--- Testing Update Bookmark API ---");
+        System.out.print("Enter Book ID: ");
+        String bookId = scanner.nextLine();
+        System.out.print("Enter Bookmark ID: ");
+        String bookmarkId = scanner.nextLine();
+
+        System.out.print("Is this a PDF or EPUB? (pdf/epub): ");
+        String format = scanner.nextLine().toLowerCase();
+
+        String locationData;
+        if (format.equals("pdf")) {
+            System.out.print("Enter new page index (e.g., 5): ");
+            String pageIndex = scanner.nextLine();
+            System.out.print("Enter new scroll Y position (optional, press Enter to skip): ");
+            String scrollY = scanner.nextLine();
+            
+            if (scrollY.isEmpty()) {
+                locationData = String.format("{\"pageIndex\":%s}", pageIndex);
+            } else {
+                locationData = String.format("{\"pageIndex\":%s,\"scrollY\":%s}", pageIndex, scrollY);
+            }
+        } else {
+            System.out.print("Enter new spine index (e.g., 3): ");
+            String spineIndex = scanner.nextLine();
+            System.out.print("Enter new CFI range (e.g., epubcfi(/6/4[chap01ref]!/4/2/1:0)): ");
+            String cfiRange = scanner.nextLine();
+            System.out.print("Enter new percentage (0-100, optional, press Enter to skip): ");
+            String percentage = scanner.nextLine();
+            
+            if (percentage.isEmpty()) {
+                locationData = String.format("{\"spineIndex\":%s,\"cfiRange\":\"%s\"}", spineIndex, cfiRange);
+            } else {
+                locationData = String.format("{\"spineIndex\":%s,\"cfiRange\":\"%s\",\"percentage\":%s}", 
+                    spineIndex, cfiRange, percentage);
+            }
+        }
+
+        String jsonPayload = String.format("{\"location_data\":%s}", locationData);
+        String url = BOOKMARK_API_URL + "/" + bookId + "/bookmarks/" + bookmarkId;
+        HttpResponse response = sendRequest("PUT", url, jsonPayload, currentToken);
+
+        if (response.statusCode == 200) {
+            System.out.println("✓ Bookmark updated successfully:");
+            System.out.println(response.body);
+        } else if (response.statusCode == 400) {
+            System.out.println("✗ Invalid bookmark data: " + response.body);
+        } else if (response.statusCode == 401) {
+            System.out.println("✗ Unauthorized - please login first");
+        } else if (response.statusCode == 404) {
+            System.out.println("✗ Bookmark not found");
+        } else {
+            System.out.println("✗ Failed to update bookmark: " + response.body);
+        }
+    }
+
+    /**
+     * Test delete bookmark
+     */
+    private static void testDeleteBookmark() throws Exception {
+        if (currentToken == null) {
+            System.out.println("⚠ Please login first");
+            return;
+        }
+
+        System.out.println("\n--- Testing Delete Bookmark API ---");
+        System.out.print("Enter Book ID: ");
+        String bookId = scanner.nextLine();
+        System.out.print("Enter Bookmark ID: ");
+        String bookmarkId = scanner.nextLine();
+
+        String url = BOOKMARK_API_URL + "/" + bookId + "/bookmarks/" + bookmarkId;
+        HttpResponse response = sendRequest("DELETE", url, null, currentToken);
+
+        if (response.statusCode == 200) {
+            System.out.println("✓ Bookmark deleted successfully");
+        } else if (response.statusCode == 401) {
+            System.out.println("✗ Unauthorized - please login first");
+        } else if (response.statusCode == 404) {
+            System.out.println("✗ Bookmark not found");
+        } else {
+            System.out.println("✗ Failed to delete bookmark: " + response.body);
         }
     }
 

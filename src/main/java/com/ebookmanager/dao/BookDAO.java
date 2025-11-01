@@ -40,19 +40,37 @@ public class BookDAO {
             ResultSet res = query.executeQuery();
 
             if (res.next()) {
+                // Handle potential null values from database
+                String authorName = res.getString("author_name");
+                String format = res.getString("format");
+                String publishDate = res.getString("publish_date");
+                
+                // Provide default values for null fields
+                if (authorName == null || authorName.isEmpty()) {
+                    authorName = "Unknown";
+                }
+                if (format == null || format.isEmpty()) {
+                    format = "PDF"; // Default format
+                }
+                if (publishDate == null || publishDate.isEmpty()) {
+                    publishDate = "Unknown";
+                }
+                
                 book = new Book(
                         res.getInt("book_id"),
                         res.getString("book_title"),
-                        res.getString("author_name"),
-                        res.getString("format"),
+                        authorName,
+                        format,
                         res.getString("file_path"),
-                        res.getString("publish_date"),
+                        publishDate,
                         res.getInt("uploader_id")
                 );
             }
 
         } catch (SQLException e) {
             System.err.println("ERROR finding book by ID: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("ERROR creating book object: " + e.getMessage());
         }
         return book;
     }
@@ -65,16 +83,37 @@ public class BookDAO {
              ResultSet res = query.executeQuery()) {
 
             while (res.next()) {
-                Book book = new Book(
-                        res.getInt("book_id"),
-                        res.getString("book_title"),
-                        res.getString("author_name"),
-                        res.getString("format"),
-                        res.getString("file_path"),
-                        res.getString("publish_date"),
-                        res.getInt("uploader_id")
-                );
-                books.add(book);
+                try {
+                    // Handle potential null values from database
+                    String authorName = res.getString("author_name");
+                    String format = res.getString("format");
+                    String publishDate = res.getString("publish_date");
+                    
+                    // Provide default values for null fields
+                    if (authorName == null || authorName.isEmpty()) {
+                        authorName = "Unknown";
+                    }
+                    if (format == null || format.isEmpty()) {
+                        format = "PDF"; // Default format
+                    }
+                    if (publishDate == null || publishDate.isEmpty()) {
+                        publishDate = "Unknown";
+                    }
+                    
+                    Book book = new Book(
+                            res.getInt("book_id"),
+                            res.getString("book_title"),
+                            authorName,
+                            format,
+                            res.getString("file_path"),
+                            publishDate,
+                            res.getInt("uploader_id")
+                    );
+                    books.add(book);
+                } catch (Exception e) {
+                    // Skip books with invalid data but log the error
+                    System.err.println("ERROR creating book object for book_id " + res.getInt("book_id") + ": " + e.getMessage());
+                }
             }
 
         } catch (SQLException e) {

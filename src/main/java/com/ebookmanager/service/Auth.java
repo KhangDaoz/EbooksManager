@@ -42,16 +42,45 @@ public class Auth {
     }
 
     public boolean register(String user_name, String password) {
-        if(userDAO.findUserByName(user_name) != null) {
+        // Validate username
+        if (user_name == null || user_name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be null or empty");
+        }
+        if (user_name.length() < 3) {
+            throw new IllegalArgumentException("Username must be at least 3 characters long");
+        }
+        if (user_name.length() > 50) {
+            throw new IllegalArgumentException("Username must not exceed 50 characters");
+        }
+
+        // Validate password
+        if (password == null || password.isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
+        }
+        if (password.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters long");
+        }
+
+        if(userDAO.findUserByName(user_name.trim()) != null) {
             return false; 
         }
-        User newUser = new User(0, user_name, hashedPassword(password));
+        User newUser = new User(0, user_name.trim(), hashedPassword(password));
         userDAO.addUser(newUser);
         return true;
     }
 
     public String login(String user_name, String password) {
-        User user = userDAO.findUserByName(user_name);
+        // Validate username
+        if (user_name == null || user_name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be null or empty");
+        }
+
+        // Validate password
+        if (password == null || password.isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
+        }
+
+        User user = userDAO.findUserByName(user_name.trim());
         if(user != null && user.getHashed_password().equals(hashedPassword(password))) {
             return sessionManager.createSession(user.getUser_id());
         }

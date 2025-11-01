@@ -13,14 +13,29 @@ public class Book {
 
     public Book(int bookId, String bookTitle, String authorName,String format,
                 String filePath, String publishDate, int uploaderId) {
-        if(bookId < 0 || bookTitle.isEmpty() || authorName.isEmpty() || filePath.isEmpty() || publishDate.isEmpty() || uploaderId < 0 || format.isEmpty()) {
-            throw new IllegalArgumentException("Invalid argument(s) for Book constructor");
+        // Required fields: bookId, bookTitle, filePath, uploaderId, format
+        // Optional fields: authorName, publishDate (can be null)
+        if(bookId < 0) {
+            throw new IllegalArgumentException("bookId cannot be negative");
         }
+        if(bookTitle == null || bookTitle.isEmpty()) {
+            throw new IllegalArgumentException("bookTitle cannot be null or empty");
+        }
+        if(filePath == null || filePath.isEmpty()) {
+            throw new IllegalArgumentException("filePath cannot be null or empty");
+        }
+        if(uploaderId < 0) {
+            throw new IllegalArgumentException("uploaderId cannot be negative");
+        }
+        if(format == null || format.isEmpty()) {
+            throw new IllegalArgumentException("format cannot be null or empty");
+        }
+        
         this.bookId = bookId;
         this.bookTitle = bookTitle;
-        this.authorName = authorName;
+        this.authorName = authorName; // Can be null
         this.filePath = filePath;
-        this.publishDate = publishDate;
+        this.publishDate = publishDate; // Can be null
         this.uploaderId = uploaderId;
         this.format = format;
                     
@@ -28,13 +43,22 @@ public class Book {
         
     public Book(String bookTitle, String authorName,String format,
                 String filePath, String publishDate) {
-        if(bookTitle.isEmpty() || authorName.isEmpty() || filePath.isEmpty() || publishDate.isEmpty() || format.isEmpty()) {
-            throw new IllegalArgumentException("Invalid argument(s) for Book constructor");
+        // Required fields: bookTitle, filePath, format
+        // Optional fields: authorName, publishDate (can be null)
+        if(bookTitle == null || bookTitle.isEmpty()) {
+            throw new IllegalArgumentException("bookTitle cannot be null or empty");
         }
+        if(filePath == null || filePath.isEmpty()) {
+            throw new IllegalArgumentException("filePath cannot be null or empty");
+        }
+        if(format == null || format.isEmpty()) {
+            throw new IllegalArgumentException("format cannot be null or empty");
+        }
+        
         this.bookTitle = bookTitle;
-        this.authorName = authorName;
+        this.authorName = authorName; // Can be null
         this.filePath = filePath;
-        this.publishDate = publishDate;
+        this.publishDate = publishDate; // Can be null
         this.format = format;
     }
 
@@ -65,8 +89,9 @@ public class Book {
     }
 
     public void setAuthorName(String authorName) {
-        if(authorName.isEmpty()) {
-            throw new IllegalArgumentException("authorName cannot be empty");
+        // authorName can be null (optional field)
+        if(authorName != null && authorName.isEmpty()) {
+            throw new IllegalArgumentException("authorName cannot be empty string (use null for no author)");
         }
         this.authorName = authorName;
     }
@@ -87,8 +112,9 @@ public class Book {
     }
 
     public void setPublishDate(String publishDate) {
-        if(publishDate.isEmpty()) {
-            throw new IllegalArgumentException("publishDate cannot be empty");
+        // publishDate can be null (optional field)
+        if(publishDate != null && publishDate.isEmpty()) {
+            throw new IllegalArgumentException("publishDate cannot be empty string (use null for no date)");
         }
         this.publishDate = publishDate;
     }

@@ -1,13 +1,13 @@
 package com.ebookmanager.api;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import com.ebookmanager.service.Auth;
-import com.sun.net.httpserver.HttpExchange;
-import java.lang.reflect.Type;
 import com.google.gson.reflect.TypeToken;
+import com.sun.net.httpserver.HttpExchange;
 
 public class UserHandler extends BaseHandler {
 
@@ -79,7 +79,31 @@ public class UserHandler extends BaseHandler {
         String username = data.get("username");
         String password = data.get("password");
 
-        boolean success = auth.register(username, password);
+        // Validate username
+        if (username == null || username.trim().isEmpty()) {
+            sendResponse(exchange, 400, "{\"error\":\"Username is required\"}");
+            return;
+        }
+        if (username.length() < 3) {
+            sendResponse(exchange, 400, "{\"error\":\"Username must be at least 3 characters long\"}");
+            return;
+        }
+        if (username.length() > 50) {
+            sendResponse(exchange, 400, "{\"error\":\"Username must not exceed 50 characters\"}");
+            return;
+        }
+
+        // Validate password
+        if (password == null || password.isEmpty()) {
+            sendResponse(exchange, 400, "{\"error\":\"Password is required\"}");
+            return;
+        }
+        if (password.length() < 8) {
+            sendResponse(exchange, 400, "{\"error\":\"Password must be at least 8 characters long\"}");
+            return;
+        }
+
+        boolean success = auth.register(username.trim(), password);
         if (success) {
             sendResponse(exchange, 201, "{\"message\":\"Registration successful\"}");
         } else {
@@ -95,7 +119,19 @@ public class UserHandler extends BaseHandler {
         String username = data.get("username");
         String password = data.get("password");
 
-        String token = auth.login(username, password);
+        // Validate username
+        if (username == null || username.trim().isEmpty()) {
+            sendResponse(exchange, 400, "{\"error\":\"Username is required\"}");
+            return;
+        }
+
+        // Validate password
+        if (password == null || password.isEmpty()) {
+            sendResponse(exchange, 400, "{\"error\":\"Password is required\"}");
+            return;
+        }
+
+        String token = auth.login(username.trim(), password);
         if (token != null) {
             sendResponse(exchange, 200, "{\"token\":\"" + token + "\", \"message\":\"Login successful\"}");
         } else {
@@ -126,6 +162,26 @@ public class UserHandler extends BaseHandler {
 
         String oldPassword = data.get("oldPassword");
         String newPassword = data.get("newPassword");
+
+        // Validate old password
+        if (oldPassword == null || oldPassword.isEmpty()) {
+            sendResponse(exchange, 400, "{\"error\":\"Old password is required\"}");
+            return;
+        }
+
+        // Validate new password
+        if (newPassword == null || newPassword.isEmpty()) {
+            sendResponse(exchange, 400, "{\"error\":\"New password is required\"}");
+            return;
+        }
+        if (newPassword.length() < 8) {
+            sendResponse(exchange, 400, "{\"error\":\"New password must be at least 8 characters long\"}");
+            return;
+        }
+        if (oldPassword.equals(newPassword)) {
+            sendResponse(exchange, 400, "{\"error\":\"New password must be different from old password\"}");
+            return;
+        }
 
         boolean success = auth.changePassword(userId, oldPassword, newPassword);
         if (success) {

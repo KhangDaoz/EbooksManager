@@ -1,14 +1,17 @@
 package com.ebookmanager.api;
 
 import java.io.IOException;
-import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
 import com.ebookmanager.dao.UserBookDAO;
 import com.ebookmanager.model.UserBook;
 import com.ebookmanager.service.Auth;
+import com.google.gson.reflect.TypeToken;
 import com.sun.net.httpserver.HttpExchange;
 
 public class UserBookHandler extends BaseHandler {
@@ -87,6 +90,20 @@ public class UserBookHandler extends BaseHandler {
         }
 
         String dateAdded = data.get("dateAdded");
+        
+        // Validate date format (YYYY-MM-DD)
+        if (dateAdded == null || dateAdded.trim().isEmpty()) {
+            sendResponse(exchange, 400, "{\"error\":\"Date added is required\"}");
+            return;
+        }
+        
+        try {
+            LocalDate.parse(dateAdded, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            sendResponse(exchange, 400, "{\"error\":\"Invalid date format. Use YYYY-MM-DD format\"}");
+            return;
+        }
+        
         UserBook userBook = new UserBook(userId, bookId, dateAdded, 0);
         
         try {
@@ -141,6 +158,12 @@ public class UserBookHandler extends BaseHandler {
             progress = Float.parseFloat(data.get("readingProgress").toString());
         } catch (NumberFormatException e) {
             sendResponse(exchange, 400, "{\"error\":\"Invalid reading progress value\"}");
+            return;
+        }
+
+        // Validate progress range
+        if (progress < 0 || progress > 100) {
+            sendResponse(exchange, 400, "{\"error\":\"Reading progress must be between 0 and 100\"}");
             return;
         }
 
