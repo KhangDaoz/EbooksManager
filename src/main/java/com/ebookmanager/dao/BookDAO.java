@@ -13,13 +13,14 @@ import com.ebookmanager.model.User;
 
 public class BookDAO {
     public void addBook(Book book) {
-        String sql = "INSERT INTO book (book_title, author_name, file_path, publisher) VALUES (?, ?, ?, ?);";
+        String sql = "INSERT INTO book (book_title, author_name, file_path, publisher,genre) VALUES (?, ?, ?, ?,?);";
         try(Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
             query.setString(1, book.getBookTitle());
             query.setString(2, book.getAuthorName());
             query.setString(3, book.getFilePath());
             query.setString(4, book.getPublisher());
+            query.setString(5, book.getGenre());
         }
     }
     public void updateBook(Book book) {
@@ -48,8 +49,9 @@ public class BookDAO {
                     res.getString("book_title"),
                     res.getString("author_name"),
                     res.getString("file_path"),
-                    res.getString("publisher")
-                )
+                    res.getString("publisher"),
+                    res.getString("genre")
+                );
             }
             return books;
         }  catch (SQLException e) {
@@ -121,7 +123,7 @@ public class BookDAO {
             return false;
         }
     }
-    public void searchBooks(String searchTerm) {
+    public ArrayList<Book> searchBooks(String searchTerm) {
         String sql = "SELECT * FROM book WHERE book_title ILIKE ? OR author_name ILIKE ? OR publisher ILIKE ? OR genre ILIKE ?;";
         try(Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
@@ -130,6 +132,7 @@ public class BookDAO {
             query.setString(3, "%" + searchTerm + "%");
             query.setString(4, "%" + searchTerm + "%");
             ResultSet res = query.executeQuery();
+            ArrayList<Book> books = new ArrayList<>();
             while (res.next()) {
                 Book book = new Book(
                     res.getInt("book_id"),
@@ -138,6 +141,7 @@ public class BookDAO {
                     res.getString("file_path"),
                     res.getString("publisher")
                 );
+                books.add(book);
             }
             return books;
         } catch (SQLException e) {

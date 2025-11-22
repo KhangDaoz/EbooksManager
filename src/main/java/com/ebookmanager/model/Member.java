@@ -1,8 +1,6 @@
 package com.ebookmanager.model;
 import java.util.ArrayList;
-import com.ebookmanager.model.Book;
-import com.ebookmanager.model.BookProgress;
-import com.ebookmanager.model.Collection;
+
 
 public class Member extends User {
 

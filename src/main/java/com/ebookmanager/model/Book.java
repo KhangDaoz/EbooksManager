@@ -8,13 +8,14 @@ public class Book {
     private int bookId;
     private String bookTitle;
     private String authorName;
+    private String genre;
     private String filePath;
     private String publisher;
     
     public Book() {}
 
     public Book(int bookId, String bookTitle, String authorName,
-                String filePath, String publisher) {
+                String filePath, String publisher, String genre) {
         if(bookTitle == null || bookTitle.isEmpty()) {
             throw new IllegalArgumentException("bookTitle cannot be null or empty");
         }
@@ -29,11 +30,11 @@ public class Book {
         this.authorName = authorName; // Can be null
         this.filePath = filePath;
         this.publisher = publisher; // Can be null
-                    
+        this.genre = genre;            
     }
         
     public Book(String bookTitle, String authorName,
-                String filePath, String publisher) {
+                String filePath, String publisher,String genre) {
 
         if(bookTitle == null || bookTitle.isEmpty()) {
             throw new IllegalArgumentException("bookTitle cannot be null or empty");
@@ -45,6 +46,7 @@ public class Book {
         this.authorName = authorName; // Can be null
         this.filePath = filePath;
         this.publisher = publisher; // Can be null
+        this.genre = genre;
     }
 
     public int getBookId() {    
@@ -92,6 +94,12 @@ public class Book {
 
     public void setPublisher(String publisher) {
         this.publisher = publisher;
+    }
+    public String getGenre() {
+        return genre;
+    }
+    public void setGenre(String genre) {
+        this.genre = genre;
     }
     public int getTotalPages() throws IOException {
         if (filePath == null || filePath.isEmpty()) {

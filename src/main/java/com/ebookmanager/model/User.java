@@ -60,7 +60,7 @@ public abstract class User {
         this.hashedPassword = hashedPassword;
     }
 
-    public List<Book> getUploadedBooks() {
+    public ArrayList<Book> getUploadedBooks() {
         return this.uploadedBooks;
     }
 
