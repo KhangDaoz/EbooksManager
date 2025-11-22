@@ -1,65 +1,50 @@
 package com.ebookmanager.model;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import java.io.File;
+import java.io.IOException;
+
 public class Book {
     private int bookId;
     private String bookTitle;
     private String authorName;
-    private String format; // epub or pdf
     private String filePath;
-    private String publishDate;
-    private int uploaderId;
+    private String publisher;
     
     public Book() {}
 
-    public Book(int bookId, String bookTitle, String authorName,String format,
-                String filePath, String publishDate, int uploaderId) {
-        // Required fields: bookId, bookTitle, filePath, uploaderId, format
-        // Optional fields: authorName, publishDate (can be null)
-        if(bookId < 0) {
-            throw new IllegalArgumentException("bookId cannot be negative");
-        }
+    public Book(int bookId, String bookTitle, String authorName,
+                String filePath, String publisher) {
         if(bookTitle == null || bookTitle.isEmpty()) {
             throw new IllegalArgumentException("bookTitle cannot be null or empty");
         }
         if(filePath == null || filePath.isEmpty()) {
             throw new IllegalArgumentException("filePath cannot be null or empty");
         }
-        if(uploaderId < 0) {
-            throw new IllegalArgumentException("uploaderId cannot be negative");
+        if(bookId < 0) {
+            throw new IllegalArgumentException("bookId cannot be negative");
         }
-        if(format == null || format.isEmpty()) {
-            throw new IllegalArgumentException("format cannot be null or empty");
-        }
-        
         this.bookId = bookId;
         this.bookTitle = bookTitle;
         this.authorName = authorName; // Can be null
         this.filePath = filePath;
-        this.publishDate = publishDate; // Can be null
-        this.uploaderId = uploaderId;
-        this.format = format;
+        this.publisher = publisher; // Can be null
                     
     }
         
-    public Book(String bookTitle, String authorName,String format,
-                String filePath, String publishDate) {
-        // Required fields: bookTitle, filePath, format
-        // Optional fields: authorName, publishDate (can be null)
+    public Book(String bookTitle, String authorName,
+                String filePath, String publisher) {
+
         if(bookTitle == null || bookTitle.isEmpty()) {
             throw new IllegalArgumentException("bookTitle cannot be null or empty");
         }
         if(filePath == null || filePath.isEmpty()) {
             throw new IllegalArgumentException("filePath cannot be null or empty");
         }
-        if(format == null || format.isEmpty()) {
-            throw new IllegalArgumentException("format cannot be null or empty");
-        }
-        
         this.bookTitle = bookTitle;
         this.authorName = authorName; // Can be null
         this.filePath = filePath;
-        this.publishDate = publishDate; // Can be null
-        this.format = format;
+        this.publisher = publisher; // Can be null
     }
 
     public int getBookId() {    
@@ -99,39 +84,34 @@ public class Book {
     public String getFilePath() {
         return filePath;
     }
+    
 
+    public String getPublisher() {
+        return publisher;
+    }
+
+    public void setPublisher(String publisher) {
+        this.publisher = publisher;
+    }
+    public int getTotalPages() throws IOException {
+        if (filePath == null || filePath.isEmpty()) {
+            throw new IllegalArgumentException("filePath cannot be null or empty");
+        }
+        File file = new File(filePath);
+        if (!file.exists()) {
+            throw new IOException("File not found: " + filePath);
+        }
+        try (PDDocument document = PDDocument.load(file)) {
+            return document.getNumberOfPages();
+        } catch (IOException e) {
+            throw new IOException("Error reading PDF file: " + e.getMessage(), e);
+        }
+    }
     public void setFilePath(String filePath) {
-        if(filePath.isEmpty()) {
-            throw new IllegalArgumentException("filePath cannot be empty");
+        if(filePath == null || filePath.isEmpty()) {
+            throw new IllegalArgumentException("filePath cannot be null or empty");
         }
         this.filePath = filePath;
     }
 
-    public String getPublishDate() {
-        return publishDate;
-    }
-
-    public void setPublishDate(String publishDate) {
-        // publishDate can be null (optional field)
-        if(publishDate != null && publishDate.isEmpty()) {
-            throw new IllegalArgumentException("publishDate cannot be empty string (use null for no date)");
-        }
-        this.publishDate = publishDate;
-    }
-
-    public int getUploaderId() {
-        return uploaderId;
-    }
-
-    public void setUploaderId(int uploaderId) {
-        if(uploaderId < 0) {
-            throw new IllegalArgumentException("uploaderId cannot be negative");
-        }
-        this.uploaderId = uploaderId;
-    }
-
-    public String getFormat() {
-        return this.format;
-    } 
-    
 }

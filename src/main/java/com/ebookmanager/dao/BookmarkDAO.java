@@ -40,52 +40,29 @@ public class BookmarkDAO { // Renamed class
     }
 
 
-    public List<Bookmark> getBookmarkForUserBook(int userId, int bookId) {
-        List<Bookmark> bookmarks = new ArrayList<>();
+    public ArrayList<Bookmark> getBookmarksForBook(User user, Book book) {
         String sql = "SELECT * FROM bookmark WHERE user_id = ? AND book_id = ?;";
-        
+        ArrayList<Bookmark> bookmarks = new ArrayList<>();
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
-            
-            query.setInt(1, userId);
-            query.setInt(2, bookId);
-            
-            try (ResultSet res = query.executeQuery()) {
-                while (res.next()) {
-                    // Create bookmark using the simplified constructor
-                    Bookmark bookmark = new Bookmark(
-                        res.getInt("user_id"),
-                        res.getInt("book_id"),
-                        res.getString("location_data")
-                    );
-                    // IMPORTANT: Set the ID from the database
-                    bookmark.setBookmarkId(res.getInt("bookmark_id")); 
-                    bookmarks.add(bookmark);
-                }
+            query.setInt(1, user.getUserId());
+            query.setInt(2, book.getBookId());
+            ResultSet res = query.executeQuery();
+            while (res.next()) {
+                Bookmark bookmark = new Bookmark(
+                    res.getString("name"),
+                    res.getString("location_data")
+                );
+                bookmark.setBookmarkId(res.getInt("bookmark_id"));
+                bookmarks.add(bookmark);
             }
+            return bookmarks;
         } catch (SQLException e) {
             System.err.println("ERROR fetching bookmarks: " + e.getMessage());
-            e.printStackTrace(); // Added for more detail
-        }
-        return bookmarks;
-    }
-
-
-    public void updateLocation(int bookmarkId, String newLocation) {
-        String sql = "UPDATE bookmark SET location_data = ? WHERE bookmark_id = ?;";
-        
-        try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement query = conn.prepareStatement(sql)) {
-            
-            query.setString(1, newLocation);
-            query.setInt(2, bookmarkId);
-            query.executeUpdate();
-            
-        } catch (SQLException e) {
-            System.err.println("ERROR updating bookmark location: " + e.getMessage());
-            e.printStackTrace(); // Added for more detail
+            return null;
         }
     }
+    
     public void deleteBookmark(int bookmarkId) {
         String sql = "DELETE FROM bookmark WHERE bookmark_id = ?;";
         

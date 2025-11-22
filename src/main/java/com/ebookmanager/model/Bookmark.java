@@ -3,8 +3,7 @@ package com.ebookmanager.model;
 public class Bookmark {
 
     private int bookmarkId;
-    private int userId;
-    private int bookId;
+    private String name;
     private String locationData; // Will store: "{\"pageIndex\":42, ...}" or "{\"spineIndex\":5, ...}"
 
     // Default constructor
@@ -12,9 +11,8 @@ public class Bookmark {
     }
 
     // Constructor for creating a new bookmark
-    public Bookmark(int userId, int bookId, String locationData) {
-        this.userId = userId;
-        this.bookId = bookId;
+    public Bookmark(String name, String locationData) {
+        this.name = name;
         this.locationData = locationData;
     }
 
@@ -24,12 +22,8 @@ public class Bookmark {
         return this.bookmarkId;
     }
 
-    public int getUserId() {
-        return this.userId;
-    }
-
-    public int getBookId() {
-        return this.bookId;
+    public String getName() {
+        return this.name;
     }
 
     public String getLocationData() {
@@ -42,12 +36,8 @@ public class Bookmark {
         this.bookmarkId = bookmarkId;
     }
 
-    public void setUserId(int userId) {
-        this.userId = userId;
-    }
-
-    public void setBookId(int bookId) {
-        this.bookId = bookId;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void setLocationData(String locationData) {
@@ -58,8 +48,7 @@ public class Bookmark {
     public String toString() {
         return "Bookmark{" +
                 "bookmarkId=" + bookmarkId +
-                ", userId=" + userId +
-                ", bookId=" + bookId +
+                ", name=" + name +
                 ", locationData='" + locationData + '\'' +
                 '}';
     }

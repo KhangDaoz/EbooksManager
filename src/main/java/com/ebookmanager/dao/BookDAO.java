@@ -9,24 +9,52 @@ import java.util.List;
 
 import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.Book;
+import com.ebookmanager.model.User;
 
 public class BookDAO {
-
-    public void addBook(Book book, int userId) {
-        String sql = "INSERT INTO book (book_title, author_name, format, file_path, publish_date, uploader_id) VALUES (?, ?, ?, ?, ?, ?);";
-        try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement query = conn.prepareStatement(sql)) {
-            
+    public void addBook(Book book) {
+        String sql = "INSERT INTO book (book_title, author_name, file_path, publisher) VALUES (?, ?, ?, ?);";
+        try(Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement query = conn.prepareStatement(sql)) {
             query.setString(1, book.getBookTitle());
             query.setString(2, book.getAuthorName());
-            query.setString(3, book.getFormat());
-            query.setString(4, book.getFilePath());
-            query.setString(5, book.getPublishDate());
-            query.setInt(6, userId);
+            query.setString(3, book.getFilePath());
+            query.setString(4, book.getPublisher());
+        }
+    }
+    public void updateBook(Book book) {
+        String sql = "UPDATE book SET book_title = ?, author_name = ?, file_path = ?, publisher = ? WHERE book_id = ?;";
+        try(Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setString(1, book.getBookTitle());
+            query.setString(2, book.getAuthorName());
+            query.setString(3, book.getFilePath());
+            query.setString(4, book.getPublisher());
+            query.setInt(5, book.getBookId());
             query.executeUpdate();
-
         } catch (SQLException e) {
-            System.err.println("ERROR adding book: " + e.getMessage());
+            System.err.println("ERROR updating book: " + e.getMessage());
+        }
+    }
+    public ArrayList<Book> findAllBooks() {
+        String sql = "SELECT * FROM book;";
+        ArrayList<Book> books = new ArrayList<>();
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement query = conn.prepareStatement(sql)) {
+            ResultSet res = query.executeQuery();
+            while (res.next()) {
+                Book book = new Book(
+                    res.getInt("book_id"),
+                    res.getString("book_title"),
+                    res.getString("author_name"),
+                    res.getString("file_path"),
+                    res.getString("publisher")
+                )
+            }
+            return books;
+        }  catch (SQLException e) {
+            System.err.println("ERROR finding all books: " + e.getMessage());
+            return null;
         }
     }
 
@@ -60,10 +88,7 @@ public class BookDAO {
                         res.getInt("book_id"),
                         res.getString("book_title"),
                         authorName,
-                        format,
                         res.getString("file_path"),
-                        publishDate,
-                        res.getInt("uploader_id")
                 );
             }
 
@@ -75,93 +100,18 @@ public class BookDAO {
         return book;
     }
 
-    public List<Book> getAllBooks() {
-        List<Book> books = new ArrayList<>();
-        String sql = "SELECT * FROM book;";
-        try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement query = conn.prepareStatement(sql);
-             ResultSet res = query.executeQuery()) {
-
-            while (res.next()) {
-                try {
-                    // Handle potential null values from database
-                    String authorName = res.getString("author_name");
-                    String format = res.getString("format");
-                    String publishDate = res.getString("publish_date");
-                    
-                    // Provide default values for null fields
-                    if (authorName == null || authorName.isEmpty()) {
-                        authorName = "Unknown";
-                    }
-                    if (format == null || format.isEmpty()) {
-                        format = "PDF"; // Default format
-                    }
-                    if (publishDate == null || publishDate.isEmpty()) {
-                        publishDate = "Unknown";
-                    }
-                    
-                    Book book = new Book(
-                            res.getInt("book_id"),
-                            res.getString("book_title"),
-                            authorName,
-                            format,
-                            res.getString("file_path"),
-                            publishDate,
-                            res.getInt("uploader_id")
-                    );
-                    books.add(book);
-                } catch (Exception e) {
-                    // Skip books with invalid data but log the error
-                    System.err.println("ERROR creating book object for book_id " + res.getInt("book_id") + ": " + e.getMessage());
-                }
-            }
-
-        } catch (SQLException e) {
-            System.err.println("ERROR fetching all books: " + e.getMessage());
-        }
-        return books;
-    }
-
-
-    public boolean updateBook(Book book, int requestingUserId) {
+    public boolean deleteBook(int bookID, User requestingUser) {
         // First verify ownership
-        Book existingBook = findBookById(book.getBookId());
-        if (existingBook == null || existingBook.getUploaderId() != requestingUserId) {
-            return false; // Not authorized
-        }
-        
-        String sql = "UPDATE book SET book_title = ?, author_name = ?, publish_date = ? WHERE book_id = ? AND uploader_id = ?;";
-        try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement query = conn.prepareStatement(sql)) {
-
-            query.setString(1, book.getBookTitle());
-            query.setString(2, book.getAuthorName());
-            query.setString(3, book.getPublishDate());
-            query.setInt(4, book.getBookId());
-            query.setInt(5, requestingUserId); // Add uploader_id check
-            
-            int rowsAffected = query.executeUpdate();
-            return rowsAffected > 0; // Returns true if update succeeded
-
-        } catch (SQLException e) {
-            System.err.println("ERROR updating book: " + e.getMessage());
-            return false;
-        }
-    }
-
-    public boolean deleteBook(int bookId, int requestingUserId) {
-        // First verify ownership
-        Book existingBook = findBookById(bookId);
-        if (existingBook == null || existingBook.getUploaderId() != requestingUserId) {
-            return false; // Not authorized
+        Book existingBook = findBookById(bookID);
+        if (existingBook == null || (!requestingUser.getRole().equals("Admin") && !requestingUser.uploaded(existingBook))) {
+            return false; 
         }   
         
-        String sql = "DELETE FROM book WHERE book_id = ? AND uploader_id = ?;";
+        String sql = "DELETE FROM book WHERE book_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
 
-            query.setInt(1, bookId);
-            query.setInt(2, requestingUserId); // Add uploader_id check
+            query.setInt(1, bookID);
             
             int rowsAffected = query.executeUpdate();
             return rowsAffected > 0; 
@@ -169,6 +119,30 @@ public class BookDAO {
         } catch (SQLException e) {
             System.err.println("ERROR deleting book: " + e.getMessage());
             return false;
+        }
+    }
+    public void searchBooks(String searchTerm) {
+        String sql = "SELECT * FROM book WHERE book_title ILIKE ? OR author_name ILIKE ? OR publisher ILIKE ? OR genre ILIKE ?;";
+        try(Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setString(1, "%" + searchTerm + "%");
+            query.setString(2, "%" + searchTerm + "%");
+            query.setString(3, "%" + searchTerm + "%");
+            query.setString(4, "%" + searchTerm + "%");
+            ResultSet res = query.executeQuery();
+            while (res.next()) {
+                Book book = new Book(
+                    res.getInt("book_id"),
+                    res.getString("book_title"),
+                    res.getString("author_name"),
+                    res.getString("file_path"),
+                    res.getString("publisher")
+                );
+            }
+            return books;
+        } catch (SQLException e) {
+            System.err.println("ERROR searching books: " + e.getMessage());
+            return null;
         }
     }
 
