@@ -5,27 +5,30 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class BookProgress {
-    private int currentPage;
+    private Integer currentPage;
     private Date lastRead;
-    private int personalRating;
+    private Integer personalRating;
     private ArrayList<Bookmark> bookmarks;
     private Book bookReading;
     // Constructors
-    public BookProgress(Book book) {
+    public BookProgress(Book book, Member member) {
         this.bookmarks = new ArrayList<>();
         this.bookReading = book;
+        this.currentPage = 0;
+        this.lastRead = new Date();
+        this.personalRating = null;
     }
     public BookProgress(int currentPage, Date lastRead, int personalRating, ArrayList<Bookmark> bookmarks, Book bookReading) {
+        this.bookReading = bookReading;
         this.currentPage = currentPage;
         this.lastRead = lastRead;
         this.personalRating = personalRating;
         this.bookmarks = bookmarks;
-        this.bookReading = bookReading;
     }
     public void addBookmark(Bookmark bookmark) {
         this.bookmarks.add(bookmark);
     }
-    public int getCurrentPage() {
+    public Integer getCurrentPage() {
         return currentPage;
     }
     public void setRating(int rating) {

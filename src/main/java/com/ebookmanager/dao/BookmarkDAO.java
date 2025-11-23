@@ -9,24 +9,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ebookmanager.db.DatabaseConnector;
-import com.ebookmanager.model.Bookmark; 
+import com.ebookmanager.model.Book;
+import com.ebookmanager.model.Bookmark;
+import com.ebookmanager.model.Member; 
 
 public class BookmarkDAO { // Renamed class
-    public void createBookmark(Bookmark bookmark) {
-        // Removed background_color and note_content
+    public void createBookmark(Member member, Book book, Bookmark bookmark) {
         String sql = "INSERT INTO bookmark (user_id, book_id, location_data) VALUES (?,?,?);";
         
-        // Use try-with-resources to ensure connection and statement are closed
         try (Connection conn = DatabaseConnector.getConnection();
-             // Get generated keys to set the ID on the object
              PreparedStatement query = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            query.setInt(1, bookmark.getUserId());
-            query.setInt(2, bookmark.getBookId());
+            query.setInt(1, member.getUserId());
+            query.setInt(2, book.getBookId());
             query.setString(3, bookmark.getLocationData());
             query.executeUpdate();
 
-            // Get the auto-generated bookmarkId and set it on the object
             try (ResultSet generatedKeys = query.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     bookmark.setBookmarkId(generatedKeys.getInt(1));
@@ -35,21 +33,21 @@ public class BookmarkDAO { // Renamed class
 
         } catch (SQLException e) {
             System.err.println("ERROR creating bookmark: " + e.getMessage());
-            e.printStackTrace(); // Added for more detail
         }
     }
 
 
-    public ArrayList<Bookmark> getBookmarksForBook(User user, Book book) {
+    public ArrayList<Bookmark> getBookmarksForBook(Member member, Book book) {
         String sql = "SELECT * FROM bookmark WHERE user_id = ? AND book_id = ?;";
         ArrayList<Bookmark> bookmarks = new ArrayList<>();
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
-            query.setInt(1, user.getUserId());
+            query.setInt(1, member.getUserId());
             query.setInt(2, book.getBookId());
             ResultSet res = query.executeQuery();
             while (res.next()) {
                 Bookmark bookmark = new Bookmark(
+                    res.getInt("bookmark_id"),
                     res.getString("name"),
                     res.getString("location_data")
                 );

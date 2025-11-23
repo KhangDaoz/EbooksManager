@@ -12,6 +12,9 @@ public abstract class User {
     
     // Constructors
     public User() {
+        this.userId = 0;
+        this.userName = "";
+        this.hashedPassword = "";
         this.uploadedBooks = new ArrayList<>();
     }
 
@@ -60,6 +63,9 @@ public abstract class User {
         this.hashedPassword = hashedPassword;
     }
 
+    public String getHashedPassword() {
+        return hashedPassword;
+    }
     public ArrayList<Book> getUploadedBooks() {
         return this.uploadedBooks;
     }
@@ -88,7 +94,7 @@ public abstract class User {
         return Integer.toString(pass.hashCode());
     }
 
-    public boolean uploaded(Book book) {
+    public boolean checkUploaded(Book book) {
         if (book == null) {
             return false;
         }

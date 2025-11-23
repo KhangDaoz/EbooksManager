@@ -1,6 +1,8 @@
 package com.ebookmanager.dao;
 
 import com.ebookmanager.db.DatabaseConnector;
+import com.ebookmanager.model.Admin;
+import com.ebookmanager.model.Member;
 import com.ebookmanager.model.User;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -9,35 +11,57 @@ import java.sql.SQLException;
 
 public class UserDAO {
 
-    public void addUser(User user) {
-        String sql = "INSERT INTO user (user_name, hashed_password) VALUES (?, ?);";
+    public void addUser(Member member) {
+        String sql = "INSERT INTO user (user_name, hashed_password, role) VALUES (?, ?, ?);";
         try(Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
-            query.setString(1, user.getUser_name());
-            query.setString(2, user.getHashed_password());
+            query.setString(1, member.getUserName());
+            query.setString(2, member.getHashedPassword());
+            query.setString(3, member.getRole());
             query.executeUpdate();
         } catch (SQLException e) {
             System.err.println("ERROR adding user: " + e.getMessage());
-            return false;
         }
     }
-    public User findUserByName(String user_name) {
-        String sql = "SELECT * FROM user WHERE user_name = ?;";
-        try(Connection conn = DatabaseConnector.getConnection();
-            PreparedStatement query = conn.prepareStatement(sql)) {
-            query.setString(1, user_name);
+
+    public User findByUsername(String userName) {
+        String sql = "SELECT user_id, user_name, hashed_password, role FROM user WHERE user_name = ?;";
+        
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement query = conn.prepareStatement(sql)) {
+            
+            query.setString(1, userName);
             ResultSet res = query.executeQuery();
-            if(res.next()) {
-                User user = new User();
-                user.setUser_id(res.getInt("user_id"));
-                user.setUser_name(res.getString("user_name"));
-                user.setHashed_password(res.getString("hashed_password"));
+            
+            if (res.next()) {
+                int userId = res.getInt("user_id");
+                String username = res.getString("user_name");
+                String hashedPassword = res.getString("hashed_password");
+                String role = res.getString("role");
+                
+                User user;
+                if ("ADMIN".equals(role)) {
+                    user = new Admin();
+                } else {
+                    user = new Member();
+                }
+                
+                user.setUserId(userId);
+                user.setUserName(username);
+                user.setHashedPassword(hashedPassword);
+                
                 return user;
             }
-        } catch(SQLException e) {
+            
+        } catch (SQLException e) {
             System.err.println("ERROR finding user: " + e.getMessage());
         }
+        
         return null;
+    }
+    
+    public boolean checkUserExists(String userName) {
+        return findByUsername(userName) != null;
     }
 
     public void deleteUser(int user_id) {
@@ -65,24 +89,4 @@ public class UserDAO {
             return false;
         }
     }
-    
-    public User getUserById(int id) { // for authoriztion when making crud operation to book table
-        String sql = "SELECT * FROM user WHERE user_id = ?;";
-        try(Connection conn = DatabaseConnector.getConnection();
-            PreparedStatement query = conn.prepareStatement(sql)) {
-            query.setInt(1, id);
-            ResultSet res = query.executeQuery();
-            if(res.next()) {
-                User user = new User();
-                user.setUser_id(res.getInt("user_id"));
-                user.setUser_name(res.getString("user_name"));
-                user.setHashed_password(res.getString("hashed_password"));
-                return user;
-            }
-        } catch(SQLException e) {
-            System.err.println("ERROR finding user by id: " + e.getMessage());
-        }
-        return null;
-    }
-    
 }

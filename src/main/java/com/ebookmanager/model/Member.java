@@ -24,7 +24,7 @@ public class Member extends User {
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
-        this.readingProgress.add(new BookProgress(book));
+        this.readingProgress.add(new BookProgress(book, this));
     }
     public void removeBookFromLibrary(BookProgress progress) {
         if (progress == null) {

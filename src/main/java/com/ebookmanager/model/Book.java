@@ -1,11 +1,16 @@
 package com.ebookmanager.model;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
+
+import com.ebookmanager.service.FileStorageService;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+
 
 public class Book {
-    private int bookId;
+    private Integer bookId;
     private String bookTitle;
     private String authorName;
     private String genre;
@@ -27,14 +32,14 @@ public class Book {
         }
         this.bookId = bookId;
         this.bookTitle = bookTitle;
-        this.authorName = authorName; // Can be null
+        this.authorName = authorName; 
         this.filePath = filePath;
-        this.publisher = publisher; // Can be null
+        this.publisher = publisher; 
         this.genre = genre;            
     }
         
     public Book(String bookTitle, String authorName,
-                String filePath, String publisher,String genre) {
+                String filePath, String publisher, String genre) {
 
         if(bookTitle == null || bookTitle.isEmpty()) {
             throw new IllegalArgumentException("bookTitle cannot be null or empty");
@@ -42,10 +47,11 @@ public class Book {
         if(filePath == null || filePath.isEmpty()) {
             throw new IllegalArgumentException("filePath cannot be null or empty");
         }
+        this.bookId = null;
         this.bookTitle = bookTitle;
-        this.authorName = authorName; // Can be null
+        this.authorName = authorName; 
         this.filePath = filePath;
-        this.publisher = publisher; // Can be null
+        this.publisher = publisher;
         this.genre = genre;
     }
 
@@ -120,6 +126,9 @@ public class Book {
             throw new IllegalArgumentException("filePath cannot be null or empty");
         }
         this.filePath = filePath;
+    }
+    public InputStream readBook() throws IOException {
+        return new FileStorageService().readFileAsResource(filePath);
     }
 
 }

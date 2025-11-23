@@ -6,12 +6,9 @@ public class Bookmark {
     private String name;
     private String locationData; // Will store: "{\"pageIndex\":42, ...}" or "{\"spineIndex\":5, ...}"
 
-    // Default constructor
-    public Bookmark() {
-    }
-
     // Constructor for creating a new bookmark
-    public Bookmark(String name, String locationData) {
+    public Bookmark(int bookmarkId, String name, String locationData) {
+        this.bookmarkId = bookmarkId;
         this.name = name;
         this.locationData = locationData;
     }

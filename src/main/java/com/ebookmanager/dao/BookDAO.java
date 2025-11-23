@@ -13,7 +13,7 @@ import com.ebookmanager.model.User;
 
 public class BookDAO {
     public void addBook(Book book) {
-        String sql = "INSERT INTO book (book_title, author_name, file_path, publisher,genre) VALUES (?, ?, ?, ?,?);";
+        String sql = "INSERT INTO book (book_title, author_name, file_path, publisher,genre) VALUES (?, ?, ?, ?, ?);";
         try(Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
             query.setString(1, book.getBookTitle());
@@ -21,17 +21,20 @@ public class BookDAO {
             query.setString(3, book.getFilePath());
             query.setString(4, book.getPublisher());
             query.setString(5, book.getGenre());
+        } catch(SQLException e) {
+            System.err.println("ERROR adding book: " + e.getMessage());
         }
     }
     public void updateBook(Book book) {
-        String sql = "UPDATE book SET book_title = ?, author_name = ?, file_path = ?, publisher = ? WHERE book_id = ?;";
+        String sql = "UPDATE book SET book_title = ?, author_name = ?, file_path = ?, publisher = ?, genre = ? WHERE book_id = ?;";
         try(Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
             query.setString(1, book.getBookTitle());
             query.setString(2, book.getAuthorName());
             query.setString(3, book.getFilePath());
             query.setString(4, book.getPublisher());
-            query.setInt(5, book.getBookId());
+            query.setString(5, book.getGenre());
+            query.setInt(6, book.getBookId());
             query.executeUpdate();
         } catch (SQLException e) {
             System.err.println("ERROR updating book: " + e.getMessage());
@@ -52,11 +55,12 @@ public class BookDAO {
                     res.getString("publisher"),
                     res.getString("genre")
                 );
+                books.add(book);
             }
             return books;
         }  catch (SQLException e) {
             System.err.println("ERROR finding all books: " + e.getMessage());
-            return null;
+            return new ArrayList<>();
         }
     }
 
@@ -70,20 +74,16 @@ public class BookDAO {
             ResultSet res = query.executeQuery();
 
             if (res.next()) {
-                // Handle potential null values from database
                 String authorName = res.getString("author_name");
-                String format = res.getString("format");
-                String publishDate = res.getString("publish_date");
+                String publisher = res.getString("publisher");
+                String genre = res.getString("genre");
                 
-                // Provide default values for null fields
                 if (authorName == null || authorName.isEmpty()) {
                     authorName = "Unknown";
                 }
-                if (format == null || format.isEmpty()) {
-                    format = "PDF"; // Default format
-                }
-                if (publishDate == null || publishDate.isEmpty()) {
-                    publishDate = "Unknown";
+
+                if (publisher == null || publisher.isEmpty()) {
+                    publisher = "Unknown";
                 }
                 
                 book = new Book(
@@ -91,21 +91,21 @@ public class BookDAO {
                         res.getString("book_title"),
                         authorName,
                         res.getString("file_path"),
+                        publisher,
+                        genre  
                 );
             }
 
         } catch (SQLException e) {
             System.err.println("ERROR finding book by ID: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("ERROR creating book object: " + e.getMessage());
+            return null;
         }
         return book;
     }
 
     public boolean deleteBook(int bookID, User requestingUser) {
-        // First verify ownership
         Book existingBook = findBookById(bookID);
-        if (existingBook == null || (!requestingUser.getRole().equals("Admin") && !requestingUser.uploaded(existingBook))) {
+        if (existingBook == null || (!requestingUser.getRole().equals("Admin") && !requestingUser.checkUploaded(existingBook))) {
             return false; 
         }   
         
@@ -135,11 +135,11 @@ public class BookDAO {
             ArrayList<Book> books = new ArrayList<>();
             while (res.next()) {
                 Book book = new Book(
-                    res.getInt("book_id"),
                     res.getString("book_title"),
                     res.getString("author_name"),
                     res.getString("file_path"),
-                    res.getString("publisher")
+                    res.getString("publisher"),
+                    res.getString("genre")
                 );
                 books.add(book);
             }
