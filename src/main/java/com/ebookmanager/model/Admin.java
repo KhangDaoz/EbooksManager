@@ -5,7 +5,6 @@ public class Admin extends User {
     public Admin() {
         super();
     }
-    
     public Admin(int userId, String userName, String hashedPassword) {
         super(userId, userName, hashedPassword);
     }

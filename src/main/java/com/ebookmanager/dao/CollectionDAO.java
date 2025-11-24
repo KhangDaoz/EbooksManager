@@ -8,6 +8,7 @@ import java.util.ArrayList;
 
 import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.Book;
+import com.ebookmanager.model.Collection;
 
 public class CollectionDAO {
     public void createCollection(int userId, String collectionName) {
@@ -101,5 +102,24 @@ public class CollectionDAO {
             throw new RuntimeException("ERROR getting collection owner: " + e.getMessage());
         }
         return -1;
+    }
+    public ArrayList<Collection> getCollectionsForUser(int userId) {
+        String sql = "SELECT * FROM collection WHERE user_id = ?;";
+        try(Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setInt(1, userId);
+            ResultSet res = query.executeQuery();
+            ArrayList<Collection> collections = new ArrayList<>();
+            while(res.next()) {
+                Collection collection = new Collection(
+                    res.getInt("collection_id"),
+                    res.getString("collection_name"));
+                collections.add(collection);
+            }
+            return collections;
+        } catch (SQLException e) {
+            System.err.println("ERROR getting collections for user: " + e.getMessage());
+            throw new RuntimeException("Database error", e);
+        }  
     }
 }

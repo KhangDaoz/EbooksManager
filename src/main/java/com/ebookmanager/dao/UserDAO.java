@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class UserDAO {
+    
 
     public void addUser(String userName, String hashedPassword, String role) {
         String sql = "INSERT INTO user (user_name, hashed_password, role) VALUES (?, ?, ?) RETURNING user_id;";
@@ -120,5 +121,17 @@ public class UserDAO {
         } catch (SQLException e) {
             System.err.println("ERROR updating user password: " + e.getMessage());
         }
+    }
+
+    public int countAdmins() {
+        String sql = "SELECT COUNT(*) FROM user WHERE role = 'Admin';";
+        try(Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement query = conn.prepareStatement(sql)) {
+            ResultSet res = query.executeQuery();
+            return res.getInt(1);
+        } catch (SQLException e) {
+            System.err.println("ERROR counting admins: " + e.getMessage());
+        }
+        return 0;
     }
 }

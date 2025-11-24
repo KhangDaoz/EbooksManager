@@ -1,7 +1,6 @@
 package com.ebookmanager.dao;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,7 +9,6 @@ import java.util.ArrayList;
 import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.Book;
 import com.ebookmanager.model.BookProgress;
-import com.ebookmanager.model.Bookmark;
 
 public class BookProgressDAO {
     
@@ -86,11 +84,7 @@ public class BookProgressDAO {
     }
 
     public BookProgress getBookProgress(int userId, int bookId) {
-        String sql = "SELECT bp.*, b.bookmark_id, b.name, b.location_data " +
-        "FROM book_progress bp " +
-        "LEFT JOIN bookmarks b ON bp.book_id = b.book_id AND bp.user_id = b.user_id " +
-        "WHERE bp.user_id = ? AND bp.book_id = ? " +
-        "ORDER BY b.bookmark_id DESC;";
+        String sql = "SELECT * FROM book_progress WHERE user_id = ? AND book_id = ?;";
         
         try(Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
@@ -98,42 +92,61 @@ public class BookProgressDAO {
             query.setInt(1, userId);
             query.setInt(2, bookId);
             
-            try (ResultSet res = query.executeQuery()) {
-                ArrayList<Bookmark> bookmarks = new ArrayList<>();
-                
-                int currentPage = 0;
-                Date lastRead = null;
-                int rating = 0;
-                boolean foundProgress = false;
-
-                while (res.next()) {
-                    foundProgress = true;
-                    currentPage = res.getInt("current_page");
-                    lastRead = res.getDate("last_read");
-                    rating = res.getInt("personal_rating");
-                    
-                    int bmId = res.getInt("bookmark_id");
-                    if (bmId > 0) { 
-                        bookmarks.add(new Bookmark(
-                            bmId,
-                            res.getString("name"),
-                            res.getString("location_data")
-                        ));
-                    }
-                }
-
-                if (foundProgress) {
-                    // Return progress data without book - Service will fetch book
-                    return new BookProgress(currentPage, lastRead, rating, bookmarks, null);
-                } else {
-                    return null;
-                }
+            ResultSet res = query.executeQuery();
+            if (res.next()) {
+                return new BookProgress(
+                    res.getInt("current_page"),
+                    res.getDate("last_read"),
+                    res.getInt("personal_rating"),
+                    new ArrayList<>(),
+                    null
+                );
             }
-
+            return null;
         } catch (SQLException e) {
             System.err.println("ERROR getting book progress: " + e.getMessage());
             throw new RuntimeException("Database error", e);
         }
     }
-
+    public void updateBookProgress(int userId, int bookId, int currentPage, int personalRating) {
+        String sql = "UPDATE book_progress SET current_page = ?, personal_rating = ? WHERE user_id = ? AND book_id = ?;";
+        try(Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setInt(1, currentPage);
+            query.setInt(2, personalRating);
+            query.setInt(3, userId);
+            query.setInt(4, bookId);
+            query.executeUpdate();
+        }
+        catch (SQLException e) {
+            System.err.println("ERROR updating book progress: " + e.getMessage());
+        }
+    }
+    public void rateBook(int userId, int bookId, int personalRating) {
+        String sql = "UPDATE book_progress SET personal_rating = ? WHERE user_id = ? AND book_id = ?;";
+        try(Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setInt(1, personalRating);
+            query.setInt(2, userId);
+            query.setInt(3, bookId);
+            query.executeUpdate();
+        }
+        catch (SQLException e) {
+            System.err.println("ERROR rating book: " + e.getMessage());
+    }
+}
+    public boolean isBookInLibrary(int userId, int bookId) {
+        String sql = "SELECT 1 FROM book_progress WHERE user_id = ? AND book_id = ?;";
+        try(Connection conn = DatabaseConnector.getConnection();
+            PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setInt(1, userId);
+            query.setInt(2, bookId);
+            ResultSet res = query.executeQuery();
+            return res.next();
+        }
+        catch (SQLException e) {
+            System.err.println("ERROR checking if book is in library: " + e.getMessage());
+            throw new RuntimeException("Database error", e);
+        }
+    }
 }

@@ -76,4 +76,10 @@ public class BookProgress {
     public void setBookReading(Book bookReading) {
         this.bookReading = bookReading;
     }
+    public void setBookmarks(ArrayList<Bookmark> bookmarks) {
+        this.bookmarks = bookmarks;
+    }
+    public void setCurrentPage(int currentPage) {
+        this.currentPage = currentPage;
+    }
 }

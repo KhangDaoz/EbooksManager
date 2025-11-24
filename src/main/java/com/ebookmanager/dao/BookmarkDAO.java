@@ -10,8 +10,8 @@ import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.Bookmark;
 
 public class BookmarkDAO { 
-    // DAO uses primitives - no Model dependencies in parameters
-    public int createBookmark(int userId, int bookId, String locationData) {
+
+    public void createBookmark(int userId, int bookId, String locationData) {
         String sql = "INSERT INTO bookmark (user_id, book_id, location_data) VALUES (?,?,?) RETURNING bookmark_id;";
         
         try (Connection conn = DatabaseConnector.getConnection();
@@ -21,18 +21,12 @@ public class BookmarkDAO {
             query.setInt(2, bookId);
             query.setString(3, locationData);
             
-            ResultSet rs = query.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("bookmark_id");
-            }
-
+            query.executeUpdate();
         } catch (SQLException e) {
             System.err.println("ERROR creating bookmark: " + e.getMessage());
+            e.printStackTrace(); 
         }
-        return -1;
     }
-
-
     public ArrayList<Bookmark> getBookmarksForBook(int userId, int bookId) {
         String sql = "SELECT * FROM bookmark WHERE user_id = ? AND book_id = ?;";
         ArrayList<Bookmark> bookmarks = new ArrayList<>();
@@ -69,5 +63,9 @@ public class BookmarkDAO {
             System.err.println("ERROR deleting bookmark: " + e.getMessage());
             e.printStackTrace(); // Added for more detail
         }
+    }
+    public void deleteAllBookmarks(int userId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'deleteAllBookmarks'");
     }
 }

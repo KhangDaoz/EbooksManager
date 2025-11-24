@@ -50,6 +50,9 @@ public class SessionManager {
     public boolean isMember() {
         return currentUser != null && currentUser instanceof Member;
     }
-    
+
+    public User getCurrentUser() {
+        return currentUser;
+    }
 }
 

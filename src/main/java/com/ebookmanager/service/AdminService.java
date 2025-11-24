@@ -56,12 +56,12 @@ public class AdminService {
         return stats;
     }
     
-    public boolean updateBookMetadata(Book book, Admin admin) {
+    public void updateBookMetadata(Book book, Admin admin) {
         if (admin == null || !"Admin".equals(admin.getRole())) {
             throw new SecurityException("Only admins can update book metadata");
         }
         
         BookDAO bookDAO = new BookDAO();
-        return bookDAO.updateBook(book.getBookId(), book.getBookTitle(), book.getAuthorName(), book.getFilePath(), book.getPublisher(), book.getGenre());
+        bookDAO.updateBook(book.getBookId(), book.getBookTitle(), book.getAuthorName(), book.getFilePath(), book.getPublisher(), book.getGenre());
     }
 }
