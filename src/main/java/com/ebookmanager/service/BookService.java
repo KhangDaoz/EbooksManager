@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import com.ebookmanager.dao.BookDAO;
 import com.ebookmanager.model.Book;
 import com.ebookmanager.model.User;
+import com.ebookmanager.util.SessionManager;
 
 public class BookService {
     private BookDAO bookDAO;
@@ -91,25 +92,59 @@ public class BookService {
         return bookDAO.searchBooks(searchTerm);
     }
 
-    public void uploadBook(Book book, User user) throws IOException {
+    public int uploadBook(File bookFile, Book book) throws IOException {
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        
+        if (currentUser == null) {
+            throw new SecurityException("No user logged in");
+        }
+        
+        if (bookFile == null || !bookFile.exists()) {
+            throw new IllegalArgumentException("Book file does not exist");
+        }
+        
         if (book == null) {
-            throw new IllegalArgumentException("Book cannot be null");
+            throw new IllegalArgumentException("Book metadata cannot be null");
         }
-        if (user == null) {
-            throw new IllegalArgumentException("User cannot be null");
+        
+        if (!fileService.isValidBookFormat(bookFile.getName())) {
+            throw new IllegalArgumentException("Invalid book format. Only PDF files are supported.");
         }
+        
+        try {
 
-        // Save file to storage
-        File bookFile = new File(book.getFilePath());
-        String storedPath = fileService.saveFile(bookFile, bookFile.getName());
-        book.setFilePath(storedPath);
+            String storedPath = fileService.saveFile(bookFile, bookFile.getName());
+            book.setFilePath(storedPath);
 
-        int bookId = addBook(book);
-        if (bookId > 0) {
+
+            int bookId = bookDAO.addBook(
+                book.getBookTitle(),
+                book.getAuthorName(),
+                book.getFilePath(),
+                book.getPublisher(),
+                book.getGenre()
+            );
+            
+            if (bookId <= 0) {
+                fileService.deleteFile(storedPath);
+                throw new IOException("Failed to add book to database");
+            }
+            
             book.setBookId(bookId);
-            user.addUploadedBook(book);
-        } else {
-            throw new IOException("Failed to add book to database");
+            
+            currentUser.addUploadedBook(book);
+            
+            return bookId;
+            
+        } catch (IOException e) {
+            if (book.getFilePath() != null) {
+                try {
+                    fileService.deleteFile(book.getFilePath());
+                } catch (IOException ignored) {
+
+                }
+            }
+            throw e;
         }
     }
 }
