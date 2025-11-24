@@ -1,7 +1,6 @@
 package com.ebookmanager.service;
 
 import com.ebookmanager.model.User;
-import com.ebookmanager.model.Member;
 import com.ebookmanager.dao.UserDAO;
 import com.ebookmanager.util.SessionManager;
 
@@ -29,7 +28,7 @@ public class AuthenticationService {
             throw new Exception("User not found");
         }
         
-        String hashedInputPassword = user.hash(password.trim());
+        String hashedInputPassword = User.hash(password.trim());
         if (!user.verifyPassword(hashedInputPassword)) {
             throw new Exception("Invalid credentials");
         }

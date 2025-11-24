@@ -1,8 +1,5 @@
 package com.ebookmanager.service;
 
-import java.io.IOException;
-
-import com.ebookmanager.dao.BookDAO;
 import com.ebookmanager.dao.BookProgressDAO;
 import com.ebookmanager.model.Book;
 import com.ebookmanager.model.BookProgress;
