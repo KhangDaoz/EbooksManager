@@ -2,11 +2,8 @@ package com.ebookmanager.model;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 
-import com.ebookmanager.service.FileStorageService;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 
 
 public class Book {
@@ -127,8 +124,4 @@ public class Book {
         }
         this.filePath = filePath;
     }
-    public InputStream readBook() throws IOException {
-        return new FileStorageService().readFileAsResource(filePath);
-    }
-
 }

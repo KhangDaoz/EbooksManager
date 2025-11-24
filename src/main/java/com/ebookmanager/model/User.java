@@ -90,7 +90,7 @@ public abstract class User {
         }
         this.hashedPassword = hash(newPass);
     }
-    public String hash(String pass) {
+    public static String hash(String pass) {
         return Integer.toString(pass.hashCode());
     }
 

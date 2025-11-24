@@ -11,7 +11,6 @@ import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.Book;
 import com.ebookmanager.model.BookProgress;
 import com.ebookmanager.model.Bookmark;
-import com.ebookmanager.model.Member;
 
 public class BookProgressDAO {
     

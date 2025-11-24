@@ -5,39 +5,45 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 
 import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.Book;
-import com.ebookmanager.model.User;
 
 public class BookDAO {
-    public void addBook(Book book) {
-        String sql = "INSERT INTO book (book_title, author_name, file_path, publisher,genre) VALUES (?, ?, ?, ?, ?);";
+    public int addBook(String bookTitle, String authorName, String filePath, String publisher, String genre) {
+        String sql = "INSERT INTO book (book_title, author_name, file_path, publisher, genre) VALUES (?, ?, ?, ?, ?) RETURNING book_id;";
         try(Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
-            query.setString(1, book.getBookTitle());
-            query.setString(2, book.getAuthorName());
-            query.setString(3, book.getFilePath());
-            query.setString(4, book.getPublisher());
-            query.setString(5, book.getGenre());
+            query.setString(1, bookTitle);
+            query.setString(2, authorName);
+            query.setString(3, filePath);
+            query.setString(4, publisher);
+            query.setString(5, genre);
+            ResultSet rs = query.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("book_id");
+            }
         } catch(SQLException e) {
             System.err.println("ERROR adding book: " + e.getMessage());
         }
+        return -1;
     }
-    public void updateBook(Book book) {
+    
+    public boolean updateBook(int bookId, String bookTitle, String authorName, String filePath, String publisher, String genre) {
         String sql = "UPDATE book SET book_title = ?, author_name = ?, file_path = ?, publisher = ?, genre = ? WHERE book_id = ?;";
         try(Connection conn = DatabaseConnector.getConnection();
             PreparedStatement query = conn.prepareStatement(sql)) {
-            query.setString(1, book.getBookTitle());
-            query.setString(2, book.getAuthorName());
-            query.setString(3, book.getFilePath());
-            query.setString(4, book.getPublisher());
-            query.setString(5, book.getGenre());
-            query.setInt(6, book.getBookId());
-            query.executeUpdate();
+            query.setString(1, bookTitle);
+            query.setString(2, authorName);
+            query.setString(3, filePath);
+            query.setString(4, publisher);
+            query.setString(5, genre);
+            query.setInt(6, bookId);
+            int rowsAffected = query.executeUpdate();
+            return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("ERROR updating book: " + e.getMessage());
+            return false;
         }
     }
     public ArrayList<Book> findAllBooks() {
@@ -103,17 +109,13 @@ public class BookDAO {
         return book;
     }
 
-    public boolean deleteBook(int bookID, User requestingUser) {
-        Book existingBook = findBookById(bookID);
-        if (existingBook == null || (!requestingUser.getRole().equals("Admin") && !requestingUser.checkUploaded(existingBook))) {
-            return false; 
-        }   
-        
+    // Pure DAO - no business logic, just deletes by ID
+    public boolean deleteBook(int bookId) {
         String sql = "DELETE FROM book WHERE book_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
 
-            query.setInt(1, bookID);
+            query.setInt(1, bookId);
             
             int rowsAffected = query.executeUpdate();
             return rowsAffected > 0; 

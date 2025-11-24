@@ -2,6 +2,9 @@ package com.ebookmanager.service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 
 import com.ebookmanager.dao.BookDAO;
 import com.ebookmanager.model.Book;
@@ -17,16 +20,77 @@ public class BookService {
     }
     
     public InputStream readBook(Book book) throws IOException {
-        String filePath = book.getFilePath();
-        return fileService.readFileAsResource(filePath);
+        if (book == null || book.getFilePath() == null) {
+            throw new IllegalArgumentException("Invalid book or file path");
+        }
+        return fileService.readFileAsResource(book.getFilePath());
     }
-    public void addBook(Book book, User user) throws IOException {
-        bookDAO.addBook(book);
+    
+    
+    public int addBook(Book book) throws IOException {
+        if (book == null) {
+            throw new IllegalArgumentException("Book cannot be null");
+        }
+        return bookDAO.addBook(
+            book.getBookTitle(),
+            book.getAuthorName(),
+            book.getFilePath(),
+            book.getPublisher(),
+            book.getGenre()
+        );
     }
-    public void updateBook(Book book, User user) throws IOException {
-        bookDAO.updateBook(book);
+    
+    public boolean updateBook(Book book) {
+        if (book == null || book.getBookId() <= 0) {
+            throw new IllegalArgumentException("Invalid book or book ID");
+        }
+        return bookDAO.updateBook(
+            book.getBookId(),
+            book.getBookTitle(),
+            book.getAuthorName(),
+            book.getFilePath(),
+            book.getPublisher(),
+            book.getGenre()
+        );
     }
-    public void deleteBook(Book book, User user) throws IOException {
-        bookDAO.deleteBook(book.getBookId(), user);
+    
+
+    public boolean deleteBook(int bookId, User requestingUser) throws IOException {
+        if (requestingUser == null) {
+            throw new IllegalArgumentException("Requesting user cannot be null");
+        }
+
+        Book existingBook = bookDAO.findBookById(bookId);
+        if (existingBook == null) {
+            return false;
+        }
+
+        boolean isAdmin = "Admin".equals(requestingUser.getRole());
+        boolean isOwner = requestingUser.checkUploaded(existingBook);
+        
+        if (!isAdmin && !isOwner) {
+            throw new SecurityException("User not authorized to delete this book");
+        }
+        
+        boolean deleted = bookDAO.deleteBook(bookId);
+        if (deleted) {
+            Files.deleteIfExists(Paths.get(existingBook.getFilePath()));
+        }
+        return deleted;
+    }
+
+    public Book findBookById(int bookId) {
+        return bookDAO.findBookById(bookId);
+    }
+    
+    public ArrayList<Book> findAllBooks() {
+        return bookDAO.findAllBooks();
+    }
+    
+    public ArrayList<Book> searchBooks(String searchTerm) {
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            throw new IllegalArgumentException("Search term cannot be empty");
+        }
+        return bookDAO.searchBooks(searchTerm);
     }
 }

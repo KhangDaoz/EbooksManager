@@ -57,12 +57,8 @@ public class AuthenticationService {
             throw new Exception("Username already taken");
         }
         
-        Member newMember = new Member();
-        newMember.setUserName(username.trim());
-        String hashedPassword = newMember.hash(password);
-        newMember.setHashedPassword(hashedPassword);
-        
-        userDAO.addUser(newMember);
+        String hashedPassword = User.hash(password);
+        userDAO.addUser(username.trim(), hashedPassword, "Member");
     }
     
     public void logout() {
