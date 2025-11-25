@@ -12,7 +12,8 @@ import com.ebookmanager.model.Bookmark;
 public class BookmarkDAO { 
 
     public void createBookmark(int userId, int bookId, String locationData) {
-        String sql = "INSERT INTO bookmark (user_id, book_id, location_data) VALUES (?,?,?) RETURNING bookmark_id;";
+        // MySQL: Xóa RETURNING bookmark_id
+        String sql = "INSERT INTO bookmark (user_id, book_id, location_data) VALUES (?,?,?);";
         
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
@@ -27,6 +28,7 @@ public class BookmarkDAO {
             e.printStackTrace(); 
         }
     }
+
     public ArrayList<Bookmark> getBookmarksForBook(int userId, int bookId) {
         String sql = "SELECT * FROM bookmark WHERE user_id = ? AND book_id = ?;";
         ArrayList<Bookmark> bookmarks = new ArrayList<>();
@@ -34,14 +36,15 @@ public class BookmarkDAO {
              PreparedStatement query = conn.prepareStatement(sql)) {
             query.setInt(1, userId);
             query.setInt(2, bookId);
-            ResultSet res = query.executeQuery();
-            while (res.next()) {
-                Bookmark bookmark = new Bookmark(
-                    res.getInt("bookmark_id"),
-                    res.getString("name"),
-                    res.getString("location_data")
-                );
-                bookmarks.add(bookmark);
+            try (ResultSet res = query.executeQuery()) {
+                while (res.next()) {
+                    Bookmark bookmark = new Bookmark(
+                        res.getInt("bookmark_id"),
+                        res.getString("name"),
+                        res.getString("location_data")
+                    );
+                    bookmarks.add(bookmark);
+                }
             }
             return bookmarks;
         } catch (SQLException e) {
@@ -52,20 +55,24 @@ public class BookmarkDAO {
     
     public void deleteBookmark(int bookmarkId) {
         String sql = "DELETE FROM bookmark WHERE bookmark_id = ?;";
-        
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
-            
             query.setInt(1, bookmarkId);
             query.executeUpdate();
-            
         } catch (SQLException e) {
             System.err.println("ERROR deleting bookmark: " + e.getMessage());
-            e.printStackTrace(); // Added for more detail
+            e.printStackTrace();
         }
     }
+    
     public void deleteAllBookmarks(int userId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'deleteAllBookmarks'");
+         String sql = "DELETE FROM bookmark WHERE user_id = ?;";
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setInt(1, userId);
+            query.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("ERROR deleting all bookmarks: " + e.getMessage());
+        }
     }
 }
