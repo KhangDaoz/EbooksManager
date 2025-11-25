@@ -3,19 +3,15 @@ package com.ebookmanager.ui;
 import com.ebookmanager.model.Book;
 import com.ebookmanager.model.BookProgress;
 import com.ebookmanager.model.Bookmark;
-import com.ebookmanager.service.BookProgressService;
-import com.ebookmanager.service.BookService;
-import com.ebookmanager.service.BookmarkService;
+import com.ebookmanager.service.*;
 import com.ebookmanager.util.SessionManager;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 
@@ -25,263 +21,231 @@ public class ReadingPanel extends JPanel {
     private BookProgressService progressService;
     private BookmarkService bookmarkService;
     
+    private boolean isPreview; // Biến cờ quan trọng
+    
     private int currentPage = 0;
     private int totalPages = 0;
+    private int currentRating = 0;
+    
     private PDDocument document;
     private PDFRenderer pdfRenderer;
     
-    private JLabel lblPageImage;
-    private JLabel lblPageInfo; 
-    private JPanel bookmarkListPanel;
+    private JLabel lblPageImage, lblPageInfo;
 
-    public ReadingPanel(Book book, MainView mainView) {
-        this.book = book;
+    public ReadingPanel(Book book, MainView mainView, boolean isPreview) {
+        this.book = book; 
         this.mainView = mainView;
-        this.progressService = new BookProgressService();
+        this.isPreview = isPreview;
+        
+        this.progressService = new BookProgressService(); 
         this.bookmarkService = new BookmarkService();
         
-        initComponents();
+        initComponents(); 
         loadBookData();
+    }
+    
+    public ReadingPanel(Book book, MainView mainView) {
+        this(book, mainView, false);
     }
 
     private void initComponents() {
-        setLayout(new BorderLayout(15, 0)); 
-        setBackground(UIUtils.COLOR_BACKGROUND);
+        setLayout(new BorderLayout(0, 0)); 
+        setBackground(UIUtils.COLOR_BACKGROUND); 
         setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // ========================================================
-        // 1. KHỐI BÊN TRÁI (READER AREA)
-        // ========================================================
-        JPanel readerPanel = new JPanel(new BorderLayout(0, 10));
-        readerPanel.setOpaque(false);
+        // --- TOP BAR ---
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
 
-        // --- TOP: SỐ TRANG ---
-        JPanel topInfoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        topInfoPanel.setOpaque(false);
-        
+        JButton btnBookmarks = new JButton("Bookmarks");
+        styleButton(btnBookmarks);
+        btnBookmarks.setPreferredSize(new Dimension(110, 35));
+        btnBookmarks.addActionListener(e -> showBookmarkOptionMenu(btnBookmarks));
+
+        JPanel centerInfoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        centerInfoPanel.setOpaque(false);
         lblPageInfo = new JLabel("0/0");
-        lblPageInfo.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblPageInfo.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblPageInfo.setOpaque(true);
         lblPageInfo.setBackground(Color.WHITE);
-        lblPageInfo.setBorder(new EmptyBorder(5, 20, 5, 20)); 
-        
-        topInfoPanel.add(lblPageInfo);
-        readerPanel.add(topInfoPanel, BorderLayout.NORTH);
+        lblPageInfo.setBorder(new EmptyBorder(8, 20, 8, 20));
+        centerInfoPanel.add(lblPageInfo);
 
-        // --- CENTER: PDF CONTENT ---
+        JPanel dummyLeft = new JPanel();
+        dummyLeft.setOpaque(false);
+        dummyLeft.setPreferredSize(btnBookmarks.getPreferredSize());
+
+        topPanel.add(dummyLeft, BorderLayout.WEST);
+        topPanel.add(centerInfoPanel, BorderLayout.CENTER);
+        topPanel.add(btnBookmarks, BorderLayout.EAST);
+
+        add(topPanel, BorderLayout.NORTH);
+
+        // --- CENTER ---
         lblPageImage = new JLabel("Loading...", SwingConstants.CENTER);
         lblPageImage.setVerticalAlignment(SwingConstants.TOP);
         lblPageImage.setOpaque(true);
-        lblPageImage.setBackground(Color.GRAY);
+        lblPageImage.setBackground(Color.LIGHT_GRAY); 
         
         JScrollPane scrollPane = new JScrollPane(lblPageImage);
-        scrollPane.setBorder(BorderFactory.createLineBorder(UIUtils.COLOR_ACCENT, 2));
+        scrollPane.setBorder(BorderFactory.createLineBorder(UIUtils.COLOR_ACCENT, 1));
         scrollPane.getViewport().setBackground(Color.GRAY);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(20);
         
-        readerPanel.add(scrollPane, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
 
-        // --- BOTTOM: NAVIGATION ---
-        JPanel navPanel = new JPanel(new BorderLayout());
-        navPanel.setOpaque(false);
-        navPanel.setBorder(new EmptyBorder(5, 0, 0, 0));
+        // --- BOTTOM BAR ---
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setOpaque(false);
+        bottomPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
 
-        JButton btnPrev = UIUtils.createFlatButton("<");
-        btnPrev.setPreferredSize(new Dimension(50, 35));
-        
-        JButton btnNext = UIUtils.createFlatButton(">");
-        btnNext.setPreferredSize(new Dimension(50, 35));
-        
-        JPanel centerBtnContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        centerBtnContainer.setOpaque(false);
-        JButton btnClose = new JButton("Close");
-        btnClose.setPreferredSize(new Dimension(100, 35));
-        btnClose.setBackground(Color.WHITE);
-        btnClose.setFocusPainted(false);
-        btnClose.setFont(UIUtils.FONT_BOLD);
-        centerBtnContainer.add(btnClose);
-
+        JButton btnPrev = UIUtils.createPrimaryButton("<");
+        btnPrev.setPreferredSize(new Dimension(60, 40));
         btnPrev.addActionListener(e -> changePage(-1));
+        
+        JButton btnNext = UIUtils.createPrimaryButton(">");
+        btnNext.setPreferredSize(new Dimension(60, 40));
         btnNext.addActionListener(e -> changePage(1));
+        
+        JPanel centerClosePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        centerClosePanel.setOpaque(false);
+        JButton btnClose = new JButton("Close");
+        styleButton(btnClose);
+        btnClose.setPreferredSize(new Dimension(120, 40));
+        
+        // SỰ KIỆN CLOSE
         btnClose.addActionListener(e -> closeBook());
+        centerClosePanel.add(btnClose);
 
-        navPanel.add(btnPrev, BorderLayout.WEST);
-        navPanel.add(centerBtnContainer, BorderLayout.CENTER);
-        navPanel.add(btnNext, BorderLayout.EAST);
+        bottomPanel.add(btnPrev, BorderLayout.WEST);
+        bottomPanel.add(centerClosePanel, BorderLayout.CENTER);
+        bottomPanel.add(btnNext, BorderLayout.EAST);
 
-        readerPanel.add(navPanel, BorderLayout.SOUTH);
-
-        // ========================================================
-        // 2. KHỐI BÊN PHẢI (SIDEBAR: BOOKMARKS)
-        // ========================================================
-        JPanel sidebarPanel = new JPanel(new BorderLayout(0, 10));
-        sidebarPanel.setPreferredSize(new Dimension(250, 0));
-        sidebarPanel.setOpaque(false);
-
-        // --- TOP: NÚT BOOKMARKS ---
-        JPanel sidebarTop = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        sidebarTop.setOpaque(false);
-        
-        JButton btnBookmarks = new JButton("Bookmarks");
-        btnBookmarks.setPreferredSize(new Dimension(120, 35));
-        btnBookmarks.setBackground(Color.WHITE);
-        btnBookmarks.setFocusPainted(false);
-        btnBookmarks.addActionListener(e -> showBookmarkMenu(btnBookmarks));
-        
-        sidebarTop.add(btnBookmarks);
-        sidebarPanel.add(sidebarTop, BorderLayout.NORTH);
-
-        // --- CENTER: DANH SÁCH BOOKMARK ---
-        bookmarkListPanel = new JPanel();
-        bookmarkListPanel.setLayout(new BoxLayout(bookmarkListPanel, BoxLayout.Y_AXIS));
-        bookmarkListPanel.setBackground(Color.WHITE);
-        
-        JScrollPane bmScroll = new JScrollPane(bookmarkListPanel);
-        bmScroll.setBorder(null);
-        
-        JPanel whiteBox = new JPanel(new BorderLayout());
-        whiteBox.setBackground(Color.WHITE);
-        whiteBox.add(bmScroll, BorderLayout.CENTER);
-        
-        sidebarPanel.add(whiteBox, BorderLayout.CENTER);
-
-        add(readerPanel, BorderLayout.CENTER);
-        add(sidebarPanel, BorderLayout.EAST);
+        add(bottomPanel, BorderLayout.SOUTH);
     }
-
-    // --- [SỬA LẠI MENU ĐÚNG TÊN] ---
-    private void showBookmarkMenu(Component invoker) {
+    
+    // --- BOOKMARKS ---
+    private void showBookmarkOptionMenu(JButton sourceBtn) {
         JPopupMenu menu = new JPopupMenu();
-        
-        // Item 1: View all (Tải lại danh sách vào ô trắng)
-        JMenuItem itemView = new JMenuItem("View all");
-        itemView.addActionListener(e -> loadBookmarksList());
-        
-        // Item 2: New (Tạo mới)
-        JMenuItem itemNew = new JMenuItem("New");
-        itemNew.addActionListener(e -> saveBookmark());
-        
-        menu.add(itemView);
-        menu.add(itemNew);
-        
-        menu.show(invoker, 0, invoker.getHeight());
+        JMenuItem itemView = new JMenuItem("View All Bookmarks");
+        itemView.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        itemView.addActionListener(e -> showViewAllDialog());
+        JMenuItem itemNew = new JMenuItem("New Bookmark...");
+        itemNew.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        itemNew.addActionListener(e -> showCreateBookmarkDialog());
+        menu.add(itemView); menu.addSeparator(); menu.add(itemNew);
+        menu.show(sourceBtn, 0, sourceBtn.getHeight());
     }
 
-    private void loadBookmarksList() {
-        bookmarkListPanel.removeAll();
-        int userId = SessionManager.getInstance().getCurrentUser().getUserId();
-        ArrayList<Bookmark> bookmarks = bookmarkService.getBookmarksForBook(userId, book.getBookId());
+    private void showCreateBookmarkDialog() {
+        if (isPreview) {
+            JOptionPane.showMessageDialog(this, "Please add to library to use bookmarks."); return;
+        }
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "New Bookmark", true);
+        dialog.setSize(300, 180); dialog.setLocationRelativeTo(this); dialog.setLayout(new BorderLayout());
+        JPanel panel = new JPanel(new GridLayout(3, 1, 5, 5)); panel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
+        JLabel lblHint = new JLabel("Bookmark Title (Page " + (currentPage + 1) + "):");
+        JTextField txtTitle = new JTextField();
+        JButton btnCreate = new JButton("Create");
+        btnCreate.setBackground(UIUtils.COLOR_ACCENT); btnCreate.setForeground(Color.WHITE);
+        btnCreate.addActionListener(e -> {
+            String title = txtTitle.getText().trim();
+            if (!title.isEmpty()) {
+                bookmarkService.createBookmark(SessionManager.getInstance().getCurrentUser().getUserId(), book.getBookId(), String.valueOf(currentPage), title);
+                JOptionPane.showMessageDialog(dialog, "Bookmark Created!"); dialog.dispose();
+            }
+        });
+        panel.add(lblHint); panel.add(txtTitle); panel.add(btnCreate);
+        dialog.add(panel, BorderLayout.CENTER); dialog.setVisible(true);
+    }
 
-        if (bookmarks.isEmpty()) {
-            JLabel empty = new JLabel("No bookmarks");
-            empty.setAlignmentX(Component.CENTER_ALIGNMENT);
-            empty.setBorder(new EmptyBorder(10,0,0,0));
-            bookmarkListPanel.add(empty);
-        } else {
-            for (Bookmark bm : bookmarks) {
-                JPanel row = new JPanel(new BorderLayout());
-                row.setBackground(new Color(240, 240, 240));
-                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-                row.setBorder(new EmptyBorder(5, 10, 5, 5));
-                
-                JLabel lblName = new JLabel("<html><b>" + bm.getName() + "</b> <font color='gray'>(P." + (Integer.parseInt(bm.getLocationData()) + 1) + ")</font></html>");
-                lblName.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    private void showViewAllDialog() {
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Your Bookmarks", true);
+        dialog.setSize(350, 400); dialog.setLocationRelativeTo(this); dialog.setLayout(new BorderLayout());
+        JPanel listPanel = new JPanel(); listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS)); listPanel.setBackground(Color.WHITE);
+        
+        int userId = SessionManager.getInstance().getCurrentUser().getUserId();
+        ArrayList<Bookmark> bms = bookmarkService.getBookmarksForBook(userId, book.getBookId());
+
+        if (bms.isEmpty()) listPanel.add(new JLabel("No bookmarks found."));
+        else {
+            for (Bookmark bm : bms) {
+                JPanel row = new JPanel(new BorderLayout()); row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+                row.setBackground(new Color(245, 245, 245)); row.setBorder(new EmptyBorder(5, 10, 5, 5));
+                JLabel lblName = new JLabel(bm.getName()); lblName.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 lblName.addMouseListener(new MouseAdapter() {
                     public void mouseClicked(MouseEvent e) {
-                        try {
-                            currentPage = Integer.parseInt(bm.getLocationData());
-                            renderCurrentPage();
-                        } catch (NumberFormatException ex) {}
+                        try { currentPage = Integer.parseInt(bm.getLocationData()); renderCurrentPage(); dialog.dispose(); } catch (Exception ex) {}
                     }
                 });
-
-                JButton btnDel = new JButton("x");
-                btnDel.setForeground(Color.RED);
-                btnDel.setBorderPainted(false);
-                btnDel.setContentAreaFilled(false);
-                btnDel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                btnDel.addActionListener(e -> {
-                    bookmarkService.deleteBookmark(bm.getBookmarkId());
-                    loadBookmarksList();
-                });
-
-                row.add(lblName, BorderLayout.CENTER);
-                row.add(btnDel, BorderLayout.EAST);
-                
-                bookmarkListPanel.add(row);
-                bookmarkListPanel.add(Box.createVerticalStrut(5));
+                JButton btnDel = new JButton("x"); btnDel.setForeground(Color.RED); btnDel.setContentAreaFilled(false); btnDel.setBorderPainted(false);
+                btnDel.addActionListener(e -> { bookmarkService.deleteBookmark(bm.getBookmarkId()); dialog.dispose(); showViewAllDialog(); });
+                row.add(lblName, BorderLayout.CENTER); row.add(btnDel, BorderLayout.EAST);
+                listPanel.add(row); listPanel.add(Box.createVerticalStrut(5));
             }
         }
-        bookmarkListPanel.revalidate();
-        bookmarkListPanel.repaint();
+        dialog.add(new JScrollPane(listPanel), BorderLayout.CENTER); dialog.setVisible(true);
     }
 
-    private void saveBookmark() {
-        String name = JOptionPane.showInputDialog(this, "Bookmark Name:", "Mark Page " + (currentPage + 1));
-        if (name != null && !name.trim().isEmpty()) {
-            int userId = SessionManager.getInstance().getCurrentUser().getUserId();
-            bookmarkService.createBookmark(userId, book.getBookId(), String.valueOf(currentPage));
-            JOptionPane.showMessageDialog(this, "Bookmark Saved!");
-            loadBookmarksList();
-        }
+    private void styleButton(JButton btn) {
+        btn.setBackground(Color.WHITE); btn.setForeground(Color.BLACK);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12)); btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.GRAY, 1), BorderFactory.createEmptyBorder(5, 10, 5, 10)));
     }
 
     private void loadBookData() {
         new Thread(() -> {
             try {
                 BookService bs = new BookService();
-                InputStream is = bs.readBook(book); 
-                document = PDDocument.load(is);
-                pdfRenderer = new PDFRenderer(document);
-                totalPages = document.getNumberOfPages();
+                InputStream is = bs.readBook(book); PDDocument doc = PDDocument.load(is);
+                document = doc; pdfRenderer = new PDFRenderer(document); totalPages = document.getNumberOfPages();
                 
-                int userId = SessionManager.getInstance().getCurrentUser().getUserId();
-                BookProgress bp = progressService.getBookProgress(userId, book.getBookId());
-                if (bp != null && bp.getCurrentPage() != null) {
-                    currentPage = Math.min(bp.getCurrentPage(), totalPages - 1);
+                if (!isPreview) {
+                    int userId = SessionManager.getInstance().getCurrentUser().getUserId();
+                    BookProgress bp = progressService.getBookProgress(userId, book.getBookId());
+                    if (bp != null && bp.getCurrentPage() != null) currentPage = Math.min(bp.getCurrentPage(), totalPages - 1);
                 }
-
-                SwingUtilities.invokeLater(() -> {
-                    renderCurrentPage();
-                    // Tự động hiện danh sách bookmark khi mở sách (nếu muốn)
-                    // loadBookmarksList(); 
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "Error loading PDF: " + e.getMessage()));
-            }
+                SwingUtilities.invokeLater(this::renderCurrentPage);
+            } catch (Exception e) { e.printStackTrace(); }
         }).start();
     }
 
     private void renderCurrentPage() {
         if (document == null) return;
         try {
-            BufferedImage image = pdfRenderer.renderImage(currentPage, 1.3f); 
-            lblPageImage.setIcon(new ImageIcon(image));
+            BufferedImage image = pdfRenderer.renderImage(currentPage, 1.3f);
+            lblPageImage.setIcon(new ImageIcon(image)); lblPageImage.setText("");
             lblPageInfo.setText((currentPage + 1) + "/" + totalPages);
-            ((JScrollPane)lblPageImage.getParent().getParent()).getVerticalScrollBar().setValue(0);
+            if (lblPageImage.getParent() != null) ((JScrollPane)lblPageImage.getParent().getParent()).getVerticalScrollBar().setValue(0);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    private void changePage(int delta) {
-        int newPage = currentPage + delta;
-        if (newPage >= 0 && newPage < totalPages) {
-            currentPage = newPage;
-            renderCurrentPage();
-        }
+    private void changePage(int d) {
+        int n = currentPage + d;
+        if (n >= 0 && n < totalPages) { currentPage = n; renderCurrentPage(); }
     }
 
+    // --- HÀM CLOSE BOOK ĐÃ SỬA ---
     private void closeBook() {
         try {
             if (document != null) document.close();
-            int userId = SessionManager.getInstance().getCurrentUser().getUserId();
-            int bookId = book.getBookId();
             
-            if (!progressService.isBookInLibrary(userId, bookId)) {
-                progressService.addBookToLibrary(userId, bookId);
+            // LOGIC ĐIỀU HƯỚNG VÀ LƯU TRỮ
+            if (isPreview) {
+                // Nếu là Preview: KHÔNG LƯU, QUAY VỀ COMMUNITY
+                System.out.println("Closed Preview. Returning to Community.");
+                mainView.goBackToCommunity(); // <--- CHUYỂN VỀ COMMUNITY
+            } else {
+                // Nếu là Read: LƯU, QUAY VỀ LIBRARY
+                int userId = SessionManager.getInstance().getCurrentUser().getUserId();
+                if (!progressService.isBookInLibrary(userId, book.getBookId())) {
+                    progressService.addBookToLibrary(userId, book.getBookId());
+                }
+                progressService.updateBookProgress(userId, book.getBookId(), currentPage, currentRating);
+                
+                mainView.goBackToLibrary(); // <--- CHUYỂN VỀ LIBRARY
             }
-            progressService.updateBookProgress(userId, bookId, currentPage, 0);
+            
         } catch (Exception e) { e.printStackTrace(); }
-        mainView.goBackToLibrary();
     }
 }

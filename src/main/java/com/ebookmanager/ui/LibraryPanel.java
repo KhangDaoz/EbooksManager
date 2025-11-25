@@ -34,7 +34,7 @@ public class LibraryPanel extends JPanel {
         
         initComponents();
         
-        // Tự động tải lại danh sách khi mở tab
+        // Tự động tải lại danh sách khi chuyển tab sang Library
         this.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentShown(java.awt.event.ComponentEvent e) {
@@ -87,7 +87,7 @@ public class LibraryPanel extends JPanel {
         scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         
-        // Luôn hiện thanh cuộn dọc
+        // LUÔN HIỆN THANH CUỘN DỌC
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         
         add(scrollPane, BorderLayout.CENTER);
@@ -95,6 +95,7 @@ public class LibraryPanel extends JPanel {
         loadLibrary("");
     }
 
+    // --- LOAD LIBRARY ---
     private void loadLibrary(String keyword) {
         listPanel.removeAll();
         int userId = SessionManager.getInstance().getCurrentUser().getUserId();
@@ -108,7 +109,7 @@ public class LibraryPanel extends JPanel {
             lbl.setBorder(new EmptyBorder(20, 0, 0, 0));
             listPanel.add(lbl);
         } else {
-            listPanel.add(Box.createVerticalStrut(10)); // Khoảng cách đầu
+            listPanel.add(Box.createVerticalStrut(10)); // Spacer đầu
             for (BookProgress bp : progresses) {
                 Book book = bp.getBookReading();
                 currentLibraryBooks.add(book);
@@ -121,25 +122,54 @@ public class LibraryPanel extends JPanel {
                 JPanel bookCard = new JPanel(new BorderLayout(10, 0));
                 bookCard.setBackground(new Color(220, 220, 220));
                 bookCard.setBorder(new EmptyBorder(10, 15, 10, 15));
-                bookCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
-                bookCard.setPreferredSize(new Dimension(0, 60));
+                bookCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+                bookCard.setPreferredSize(new Dimension(0, 70));
+                
+                // Info Panel (Title + Rating)
+                JPanel infoP = new JPanel(new GridLayout(2, 1));
+                infoP.setOpaque(false);
                 
                 JLabel lblTitle = new JLabel(book.getBookTitle());
-                lblTitle.setFont(UIUtils.FONT_GENERAL);
+                lblTitle.setFont(UIUtils.FONT_BOLD);
                 lblTitle.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                
                 lblTitle.addMouseListener(new MouseAdapter() {
-                    @Override
                     public void mouseClicked(MouseEvent e) {
                         mainView.openReadingView(book);
                     }
                 });
-
-                JButton btnRemove = new JButton("Remove");
-                btnRemove.setBackground(new Color(200, 200, 200));
-                btnRemove.setBorderPainted(false);
-                btnRemove.setFocusPainted(false);
                 
+                String ratingStr = (bp.getPersonalRating() > 0) ? bp.getPersonalRating() + "/5" : "Unrated";
+                JLabel lblSub = new JLabel("Page: " + bp.getCurrentPage() + "  |  Rating: " + ratingStr);
+                lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                lblSub.setForeground(Color.GRAY);
+                
+                infoP.add(lblTitle);
+                infoP.add(lblSub);
+
+                // Action Panel (Rate + Remove)
+                JPanel actionP = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+                actionP.setOpaque(false);
+                
+                JButton btnRate = new JButton("Rate");
+                styleSmallButton(btnRate);
+                btnRate.setBackground(new Color(255, 255, 200));
+                
+                JButton btnRemove = new JButton("Remove");
+                styleSmallButton(btnRemove);
+                
+                btnRate.addActionListener(e -> {
+                    String input = JOptionPane.showInputDialog(this, "Rate (1-5):", bp.getPersonalRating());
+                    if (input != null) {
+                        try {
+                            int r = Integer.parseInt(input);
+                            if (r >= 1 && r <= 5) {
+                                progressService.rateBook(userId, book.getBookId(), r);
+                                loadLibrary(txtSearch.getText());
+                            }
+                        } catch (Exception ex) {}
+                    }
+                });
+
                 btnRemove.addActionListener(e -> {
                     int cf = JOptionPane.showConfirmDialog(this, "Remove '" + book.getBookTitle() + "'?", "Confirm", JOptionPane.YES_NO_OPTION);
                     if (cf == JOptionPane.YES_OPTION) {
@@ -148,8 +178,11 @@ public class LibraryPanel extends JPanel {
                     }
                 });
 
-                bookCard.add(lblTitle, BorderLayout.CENTER);
-                bookCard.add(btnRemove, BorderLayout.EAST);
+                actionP.add(btnRate);
+                actionP.add(btnRemove);
+
+                bookCard.add(infoP, BorderLayout.CENTER);
+                bookCard.add(actionP, BorderLayout.EAST);
                 
                 JPanel wrapper = new JPanel(new BorderLayout());
                 wrapper.setBackground(Color.WHITE);
@@ -290,7 +323,7 @@ public class LibraryPanel extends JPanel {
 
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(new Color(180, 180, 180));
-        footer.setBorder(new EmptyBorder(10, 20, 20, 20));
+        footer.setBorder(new EmptyBorder(10, 20, 10, 20));
 
         JButton btnRen = new JButton("Rename");
         styleFlowButton(btnRen); 
@@ -427,7 +460,7 @@ public class LibraryPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    // 5. ADD BOOK (Đã xuống dòng rõ ràng)
+    // 5. ADD BOOK
     private void showAddBookDialog(JDialog parent, Collection col, Runnable onDone) {
         JDialog dialog = new JDialog(parent, "Add Book", true);
         dialog.setSize(500, 400);
@@ -452,17 +485,26 @@ public class LibraryPanel extends JPanel {
         listP.setBackground(new Color(180, 180, 180));
         dialog.add(new JScrollPane(listP), BorderLayout.CENTER);
 
-        // Biến chọn
         final Book[] selBook = {null};
         final JPanel[] selP = {null};
 
-        // Hàm load danh sách
         Runnable load = () -> {
             listP.removeAll();
-            String k = txtS.getText();
-            ArrayList<Book> allBooks = k.isEmpty() ? bookService.findAllBooks() : bookService.searchBooks(k);
+            String k = txtS.getText().toLowerCase();
             
-            for (Book b : allBooks) {
+            // --- [ĐIỂM CẬP NHẬT] Chỉ tìm kiếm trong thư viện cá nhân (currentLibraryBooks) ---
+            ArrayList<Book> filteredBooks = new ArrayList<>();
+            for (Book b : currentLibraryBooks) {
+                if (b.getBookTitle().toLowerCase().contains(k) || b.getAuthorName().toLowerCase().contains(k)) {
+                    filteredBooks.add(b);
+                }
+            }
+            
+            if (filteredBooks.isEmpty()) {
+                listP.add(new JLabel("No matching books in your Library."));
+            }
+
+            for (Book b : filteredBooks) {
                 JPanel p = new JPanel(new BorderLayout());
                 p.setBackground(new Color(220, 220, 220));
                 p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
@@ -470,7 +512,6 @@ public class LibraryPanel extends JPanel {
                 p.add(new JLabel(b.getBookTitle()), BorderLayout.CENTER);
                 
                 p.addMouseListener(new MouseAdapter() {
-                    @Override
                     public void mouseClicked(MouseEvent e) {
                         if (selP[0] != null) selP[0].setBackground(new Color(220, 220, 220));
                         selP[0] = p;
@@ -501,8 +542,6 @@ public class LibraryPanel extends JPanel {
                 try {
                     collectionService.addBookToCollection(selBook[0].getBookId(), col.getCollectionId(), SessionManager.getInstance().getCurrentUser());
                     JOptionPane.showMessageDialog(dialog, "Added!");
-                    
-                    // [QUAN TRỌNG] Gọi reload ngay khi thêm
                     onDone.run(); 
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(dialog, ex.getMessage());
@@ -515,7 +554,6 @@ public class LibraryPanel extends JPanel {
         footer.add(btnAdd);
         dialog.add(footer, BorderLayout.SOUTH);
         
-        // Sự kiện đóng cửa sổ
         dialog.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosed(java.awt.event.WindowEvent e) {

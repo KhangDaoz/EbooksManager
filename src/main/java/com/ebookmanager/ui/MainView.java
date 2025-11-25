@@ -10,6 +10,7 @@ import javax.swing.border.EmptyBorder;
 public class MainView extends JFrame {
     private CardLayout cardLayout;
     private JPanel cardPanel;
+    // Danh sách nút để quản lý việc đổi màu
     private List<JButton> sidebarButtons = new ArrayList<>();
 
     public MainView() {
@@ -33,9 +34,10 @@ public class MainView extends JFrame {
 
         // Menus
         JButton btnCom = createSidebarButton("Community", "COMMUNITY");
-        gbc.gridy = row++; sidebar.add(btnCom, gbc); setActiveButton(btnCom);
-        gbc.gridy = row++; sidebar.add(createSidebarButton("Library", "LIBRARY"), gbc);
-        gbc.gridy = row++; sidebar.add(createSidebarButton("Bookmarks", "BOOKMARKS"), gbc);
+        gbc.gridy = row++; sidebar.add(btnCom, gbc); setActiveButton(btnCom); // Mặc định sáng nút Community
+        
+        JButton btnLib = createSidebarButton("Library", "LIBRARY");
+        gbc.gridy = row++; sidebar.add(btnLib, gbc);
 
         // ADMIN CHECK
         if (SessionManager.getInstance().isAdmin()) {
@@ -75,7 +77,7 @@ public class MainView extends JFrame {
         cardPanel.add(new CommunityPanel(this), "COMMUNITY");
         cardPanel.add(new LibraryPanel(this), "LIBRARY");
         cardPanel.add(new SettingsPanel(), "SETTINGS");
-        cardPanel.add(new JPanel(), "BOOKMARKS");
+
         if (SessionManager.getInstance().isAdmin()) {
             cardPanel.add(new UserManagementPanel(), "USER_MGMT");
             cardPanel.add(new AdminBookManagementPanel(), "BOOK_MGMT");
@@ -98,6 +100,7 @@ public class MainView extends JFrame {
         return btn;
     }
 
+    // Hàm đổi màu nút active
     private void setActiveButton(JButton active) {
         for(JButton b : sidebarButtons) {
             b.setBackground(b == active ? UIUtils.COLOR_ACCENT : UIUtils.COLOR_DARK_BG);
@@ -105,9 +108,36 @@ public class MainView extends JFrame {
         }
     }
     
-    public void openReadingView(Book book) {
-        cardPanel.add(new ReadingPanel(book, this), "READ_" + book.getBookId());
+    // --- CÁC HÀM ĐIỀU HƯỚNG ---
+
+    public void openReadingView(Book book, boolean isPreview) {
+        cardPanel.add(new ReadingPanel(book, this, isPreview), "READ_" + book.getBookId());
         cardLayout.show(cardPanel, "READ_" + book.getBookId());
     }
-    public void goBackToLibrary() { cardLayout.show(cardPanel, "LIBRARY"); }
+
+    public void openReadingView(Book book) {
+        openReadingView(book, false); 
+    }
+
+    // 1. Quay về Library (và cập nhật màu nút Sidebar)
+    public void goBackToLibrary() { 
+        cardLayout.show(cardPanel, "LIBRARY"); 
+        updateSidebarVisuals("Library");
+    }
+
+    // 2. Quay về Community (MỚI)
+    public void goBackToCommunity() {
+        cardLayout.show(cardPanel, "COMMUNITY");
+        updateSidebarVisuals("Community");
+    }
+
+    // Helper: Tìm nút theo tên text để set active
+    private void updateSidebarVisuals(String btnText) {
+        for (JButton btn : sidebarButtons) {
+            if (btn.getText().equals(btnText)) {
+                setActiveButton(btn);
+                break;
+            }
+        }
+    }
 }

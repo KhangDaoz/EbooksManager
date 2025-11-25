@@ -11,9 +11,10 @@ import com.ebookmanager.model.Bookmark;
 
 public class BookmarkDAO { 
 
-    public void createBookmark(int userId, int bookId, String locationData) {
-        // MySQL: Xóa RETURNING bookmark_id
-        String sql = "INSERT INTO bookmark (user_id, book_id, location_data) VALUES (?,?,?);";
+    // Đã cập nhật: Thêm tham số 'name' và sửa SQL
+    public void createBookmark(int userId, int bookId, String locationData, String name) {
+        // Thêm cột name vào câu lệnh INSERT
+        String sql = "INSERT INTO bookmark (user_id, book_id, location_data, name) VALUES (?, ?, ?, ?);";
         
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
@@ -21,6 +22,7 @@ public class BookmarkDAO {
             query.setInt(1, userId);
             query.setInt(2, bookId);
             query.setString(3, locationData);
+            query.setString(4, name); // Set giá trị cho cột name
             
             query.executeUpdate();
         } catch (SQLException e) {
@@ -34,13 +36,16 @@ public class BookmarkDAO {
         ArrayList<Bookmark> bookmarks = new ArrayList<>();
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
+            
             query.setInt(1, userId);
             query.setInt(2, bookId);
+            
             try (ResultSet res = query.executeQuery()) {
                 while (res.next()) {
+                    // Đảm bảo constructor của Bookmark khớp với thứ tự này
                     Bookmark bookmark = new Bookmark(
                         res.getInt("bookmark_id"),
-                        res.getString("name"),
+                        res.getString("name"), // Lấy cột name từ DB
                         res.getString("location_data")
                     );
                     bookmarks.add(bookmark);
