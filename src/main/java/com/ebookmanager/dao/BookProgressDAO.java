@@ -139,7 +139,7 @@ public class BookProgressDAO {
         }
     }
     
-    public boolean isBookInLibrary(int userId, int bookId) {
-        return checkIfBookIsInLibrary(userId, bookId);
-    }
+    // public boolean isBookInLibrary(int userId, int bookId) {
+    //     return checkIfBookIsInLibrary(userId, bookId);
+    // }
 }

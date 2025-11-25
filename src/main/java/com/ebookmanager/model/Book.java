@@ -13,6 +13,7 @@ public class Book {
     private String genre;
     private String filePath;
     private String publisher;
+    private User uploader;
     
     public Book() {}
 
@@ -89,7 +90,13 @@ public class Book {
     public String getFilePath() {
         return filePath;
     }
-    
+
+    public void setFilePath(String filePath) {
+        if(filePath == null || filePath.isEmpty()) {
+            throw new IllegalArgumentException("filePath cannot be null or empty");
+        }
+        this.filePath = filePath;
+    }
 
     public String getPublisher() {
         return publisher;
@@ -98,12 +105,25 @@ public class Book {
     public void setPublisher(String publisher) {
         this.publisher = publisher;
     }
+
     public String getGenre() {
         return genre;
     }
+
     public void setGenre(String genre) {
         this.genre = genre;
     }
+
+    public User getUploader() {
+        return this.uploader;
+    }
+
+    public void setUploader(User uploader) {
+        if(uploader != null)
+            throw new IllegalArgumentException("Uploader can't null");
+        this.uploader = uploader;
+    }
+
     public int getTotalPages() throws IOException {
         if (filePath == null || filePath.isEmpty()) {
             throw new IllegalArgumentException("filePath cannot be null or empty");
@@ -118,11 +138,6 @@ public class Book {
             throw new IOException("Error reading PDF file: " + e.getMessage(), e);
         }
     }
-    public void setFilePath(String filePath) {
-        if(filePath == null || filePath.isEmpty()) {
-            throw new IllegalArgumentException("filePath cannot be null or empty");
-        }
-        this.filePath = filePath;
-    }
+    
     
 }

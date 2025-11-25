@@ -40,7 +40,7 @@ public class BookProgressService {
     }
 
     public boolean isBookInLibrary(int userId, int bookId) {
-        return bookProgressDAO.isBookInLibrary(userId, bookId);
+        return bookProgressDAO.checkIfBookIsInLibrary(userId, bookId);
     }
     
     public ArrayList<BookProgress> getBookProgresses(int userId) {

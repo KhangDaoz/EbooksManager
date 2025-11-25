@@ -2,13 +2,11 @@ package com.ebookmanager.model;
 
 import java.util.ArrayList;
 
-
 public abstract class User {
     private int userId;
     private String userName;
     private String hashedPassword;
     private ArrayList<Book> uploadedBooks;
-    public abstract String getRole();
     
     // Constructors
     public User() {
@@ -50,10 +48,11 @@ public abstract class User {
     }
 
     public void setUserName(String userName) {
-        if (userName == null || userName.isEmpty()) {
-            throw new IllegalArgumentException("userName cannot be null or empty");
-        }
         this.userName = userName;
+    }
+
+    public String getHashedPassword() {
+        return hashedPassword;
     }
 
     public void setHashedPassword(String hashedPassword) {
@@ -63,18 +62,14 @@ public abstract class User {
         this.hashedPassword = hashedPassword;
     }
 
-    public String getHashedPassword() {
-        return hashedPassword;
-    }
     public ArrayList<Book> getUploadedBooks() {
         return this.uploadedBooks;
     }
 
-    public void addUploadedBook(Book book) {
-        if (book == null) {
-            throw new IllegalArgumentException("book cannot be null");
-        }
-        this.uploadedBooks.add(book);
+    public abstract String getRole();
+
+    public static String hash(String pass) {
+        return Integer.toString(pass.hashCode());
     }
 
     public boolean verifyPassword(String hashedPassword) {
@@ -90,16 +85,28 @@ public abstract class User {
         }
         this.hashedPassword = hash(newPass);
     }
-    public static String hash(String pass) {
-        return Integer.toString(pass.hashCode());
-    }
 
+    public void uploadBook(Book book) {
+        if (book == null) {
+            throw new IllegalArgumentException("book cannot be null");
+        }
+        this.uploadedBooks.add(book);
+    }
+    
     public boolean checkUploaded(Book book) {
         if (book == null) {
             return false;
         }
         return this.uploadedBooks.contains(book);
     }
+    
+    public void deleteUploadedBook(Book book) {
+        if (book == null) {
+            throw new IllegalArgumentException("book cannot be null");
+        }
+        if(!checkUploaded(book)) {
+            throw new IllegalArgumentException("book not found");
+        }
+        uploadedBooks.remove(book);
+    }
 }
-
-

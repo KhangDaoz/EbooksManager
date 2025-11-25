@@ -30,14 +30,20 @@ public class Bookmark {
     // --- Setters ---
 
     public void setBookmarkId(int bookmarkId) {
+        if(bookmarkId < 0)
+            throw new IllegalArgumentException("BookmarkId can't negative");
         this.bookmarkId = bookmarkId;
     }
 
     public void setName(String name) {
+        if(name == null || name.isEmpty())
+            throw new IllegalArgumentException("Bookmark name can't empty");
         this.name = name;
     }
 
     public void setLocationData(String locationData) {
+        if(locationData == null || locationData.isEmpty())
+            throw new IllegalArgumentException("Location of bookmark can't empty");
         this.locationData = locationData;
     }
 

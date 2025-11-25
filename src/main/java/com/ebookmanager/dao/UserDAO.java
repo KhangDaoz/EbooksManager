@@ -26,6 +26,17 @@ public class UserDAO {
         }
     }
 
+    public void deleteUser(int user_id) {
+        String sql = "DELETE FROM `user` WHERE user_id = ?;";
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement query = conn.prepareStatement(sql)) {
+            query.setInt(1, user_id);
+            query.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("ERROR deleting user: " + e.getMessage());
+        }
+    }
+
     public User findByUsername(String userName) {
         String sql = "SELECT user_id, user_name, hashed_password, role FROM `user` WHERE user_name = ?;";
         
@@ -42,21 +53,6 @@ public class UserDAO {
             System.err.println("ERROR finding user: " + e.getMessage());
         }
         return null;
-    }
-    
-    public boolean checkUserExists(String userName) {
-        return findByUsername(userName) != null;
-    }
-
-    public void deleteUser(int user_id) {
-        String sql = "DELETE FROM `user` WHERE user_id = ?;";
-        try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement query = conn.prepareStatement(sql)) {
-            query.setInt(1, user_id);
-            query.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("ERROR deleting user: " + e.getMessage());
-        }
     }
     
     public ArrayList<User> findAllUsers() {
@@ -76,6 +72,10 @@ public class UserDAO {
         return users;
     }
 
+    // public boolean checkUserExists(String userName) {
+    //     return findByUsername(userName) != null;
+    // }
+
     public void updateUserPassword(int user_id, String new_hashed_password) {
         String sql = "UPDATE `user` SET hashed_password = ? WHERE user_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
@@ -88,19 +88,19 @@ public class UserDAO {
         }
     }
 
-    public int countAdmins() {
-        String sql = "SELECT COUNT(*) FROM `user` WHERE role = 'Admin';";
-        try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement query = conn.prepareStatement(sql);
-             ResultSet res = query.executeQuery()) {
-            if (res.next()) {
-                return res.getInt(1);
-            }
-        } catch (SQLException e) {
-            System.err.println("ERROR counting admins: " + e.getMessage());
-        }
-        return 0;
-    }
+    // public int countAdmins() {
+    //     String sql = "SELECT COUNT(*) FROM `user` WHERE role = 'Admin';";
+    //     try (Connection conn = DatabaseConnector.getConnection();
+    //          PreparedStatement query = conn.prepareStatement(sql);
+    //          ResultSet res = query.executeQuery()) {
+    //         if (res.next()) {
+    //             return res.getInt(1);
+    //         }
+    //     } catch (SQLException e) {
+    //         System.err.println("ERROR counting admins: " + e.getMessage());
+    //     }
+    //     return 0;
+    // }
 
     private User mapResultSetToUser(ResultSet res) throws SQLException {
         int userId = res.getInt("user_id");

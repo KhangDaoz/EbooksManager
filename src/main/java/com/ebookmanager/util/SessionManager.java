@@ -6,14 +6,10 @@ import com.ebookmanager.model.Admin;
 
 
 public class SessionManager {
-    
     private static SessionManager instance;
     private User currentUser;
     
-    private SessionManager() {
-        
-    }
-    
+    private SessionManager() {}
 
     public static SessionManager getInstance() {
         if (instance == null) {
