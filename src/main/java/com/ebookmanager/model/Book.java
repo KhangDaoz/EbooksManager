@@ -80,7 +80,6 @@ public class Book {
     }
 
     public void setAuthorName(String authorName) {
-        // authorName can be null (optional field)
         if(authorName != null && authorName.isEmpty()) {
             throw new IllegalArgumentException("authorName cannot be empty string (use null for no author)");
         }

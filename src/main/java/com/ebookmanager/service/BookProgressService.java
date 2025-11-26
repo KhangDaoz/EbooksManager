@@ -33,8 +33,6 @@ public class BookProgressService {
     public void updateBookProgress(int userId, int bookId, int currentPage, int personalRating) {
         bookProgressDAO.updateBookProgress(userId, bookId, currentPage, personalRating);
     }
-
-    // [QUAN TRỌNG] Hàm này sửa lỗi gạch đỏ của bạn
     public void rateBook(int userId, int bookId, int personalRating) {
         bookProgressDAO.rateBook(userId, bookId, personalRating);
     }

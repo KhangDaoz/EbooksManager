@@ -21,7 +21,7 @@ public class ReadingPanel extends JPanel {
     private BookProgressService progressService;
     private BookmarkService bookmarkService;
     
-    private boolean isPreview; // Biến cờ quan trọng
+    private boolean isPreview; 
     
     private int currentPage = 0;
     private int totalPages = 0;
@@ -50,12 +50,11 @@ public class ReadingPanel extends JPanel {
 
     private void initComponents() {
         setLayout(new BorderLayout(0, 0)); 
-        setBackground(UIUtils.COLOR_BACKGROUND); 
-        setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        // --- TOP BAR ---
+        setBackground(new Color(50, 50, 50)); 
+        setBorder(new EmptyBorder(10, 10, 10, 10));
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
+        topPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
 
         JButton btnBookmarks = new JButton("Bookmarks");
         styleButton(btnBookmarks);
@@ -64,11 +63,12 @@ public class ReadingPanel extends JPanel {
 
         JPanel centerInfoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         centerInfoPanel.setOpaque(false);
-        lblPageInfo = new JLabel("0/0");
-        lblPageInfo.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblPageInfo = new JLabel("Loading...");
+        lblPageInfo.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblPageInfo.setOpaque(true);
-        lblPageInfo.setBackground(Color.WHITE);
-        lblPageInfo.setBorder(new EmptyBorder(8, 20, 8, 20));
+        lblPageInfo.setBackground(new Color(50, 50, 50));
+        lblPageInfo.setForeground(Color.WHITE);
+        lblPageInfo.setBorder(new EmptyBorder(5, 20, 5, 20));
         centerInfoPanel.add(lblPageInfo);
 
         JPanel dummyLeft = new JPanel();
@@ -80,39 +80,35 @@ public class ReadingPanel extends JPanel {
         topPanel.add(btnBookmarks, BorderLayout.EAST);
 
         add(topPanel, BorderLayout.NORTH);
-
-        // --- CENTER ---
-        lblPageImage = new JLabel("Loading...", SwingConstants.CENTER);
+        lblPageImage = new JLabel("", SwingConstants.CENTER);
         lblPageImage.setVerticalAlignment(SwingConstants.TOP);
         lblPageImage.setOpaque(true);
-        lblPageImage.setBackground(Color.LIGHT_GRAY); 
+        lblPageImage.setBackground(new Color(80, 80, 80)); 
         
         JScrollPane scrollPane = new JScrollPane(lblPageImage);
-        scrollPane.setBorder(BorderFactory.createLineBorder(UIUtils.COLOR_ACCENT, 1));
-        scrollPane.getViewport().setBackground(Color.GRAY);
+        scrollPane.setBorder(null); 
+        scrollPane.getViewport().setBackground(new Color(80, 80, 80));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(20);
         
         add(scrollPane, BorderLayout.CENTER);
-
-        // --- BOTTOM BAR ---
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setOpaque(false);
         bottomPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
 
-        JButton btnPrev = UIUtils.createPrimaryButton("<");
-        btnPrev.setPreferredSize(new Dimension(60, 40));
+        JButton btnPrev = UIUtils.createPrimaryButton("Prev Page"); // Nút to hơn
+        btnPrev.setPreferredSize(new Dimension(120, 45));
         btnPrev.addActionListener(e -> changePage(-1));
         
-        JButton btnNext = UIUtils.createPrimaryButton(">");
-        btnNext.setPreferredSize(new Dimension(60, 40));
+        JButton btnNext = UIUtils.createPrimaryButton("Next Page"); // Nút to hơn
+        btnNext.setPreferredSize(new Dimension(120, 45));
         btnNext.addActionListener(e -> changePage(1));
         
         JPanel centerClosePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         centerClosePanel.setOpaque(false);
-        JButton btnClose = new JButton("Close");
+        JButton btnClose = new JButton("Close Reader");
         styleButton(btnClose);
-        btnClose.setPreferredSize(new Dimension(120, 40));
-        
-        // SỰ KIỆN CLOSE
+        btnClose.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnClose.setPreferredSize(new Dimension(150, 45));
         btnClose.addActionListener(e -> closeBook());
         centerClosePanel.add(btnClose);
 
@@ -122,8 +118,6 @@ public class ReadingPanel extends JPanel {
 
         add(bottomPanel, BorderLayout.SOUTH);
     }
-    
-    // --- BOOKMARKS ---
     private void showBookmarkOptionMenu(JButton sourceBtn) {
         JPopupMenu menu = new JPopupMenu();
         JMenuItem itemView = new JMenuItem("View All Bookmarks");
@@ -213,7 +207,8 @@ public class ReadingPanel extends JPanel {
     private void renderCurrentPage() {
         if (document == null) return;
         try {
-            BufferedImage image = pdfRenderer.renderImage(currentPage, 1.3f);
+            float scale = 1.5f; 
+            BufferedImage image = pdfRenderer.renderImage(currentPage, scale);
             lblPageImage.setIcon(new ImageIcon(image)); lblPageImage.setText("");
             lblPageInfo.setText((currentPage + 1) + "/" + totalPages);
             if (lblPageImage.getParent() != null) ((JScrollPane)lblPageImage.getParent().getParent()).getVerticalScrollBar().setValue(0);
@@ -224,26 +219,21 @@ public class ReadingPanel extends JPanel {
         int n = currentPage + d;
         if (n >= 0 && n < totalPages) { currentPage = n; renderCurrentPage(); }
     }
-
-    // --- HÀM CLOSE BOOK ĐÃ SỬA ---
     private void closeBook() {
         try {
             if (document != null) document.close();
             
-            // LOGIC ĐIỀU HƯỚNG VÀ LƯU TRỮ
             if (isPreview) {
-                // Nếu là Preview: KHÔNG LƯU, QUAY VỀ COMMUNITY
                 System.out.println("Closed Preview. Returning to Community.");
-                mainView.goBackToCommunity(); // <--- CHUYỂN VỀ COMMUNITY
+                mainView.goBackToCommunity(); 
             } else {
-                // Nếu là Read: LƯU, QUAY VỀ LIBRARY
                 int userId = SessionManager.getInstance().getCurrentUser().getUserId();
                 if (!progressService.isBookInLibrary(userId, book.getBookId())) {
                     progressService.addBookToLibrary(userId, book.getBookId());
                 }
                 progressService.updateBookProgress(userId, book.getBookId(), currentPage, currentRating);
                 
-                mainView.goBackToLibrary(); // <--- CHUYỂN VỀ LIBRARY
+                mainView.goBackToLibrary(); 
             }
             
         } catch (Exception e) { e.printStackTrace(); }

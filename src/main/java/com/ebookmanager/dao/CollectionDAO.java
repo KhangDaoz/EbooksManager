@@ -25,7 +25,6 @@ public class CollectionDAO {
     }
 
     public void addBookToCollection(int bookId, int collectionId) {
-        // Dùng IGNORE để tránh lỗi duplicate key
         String sql = "INSERT IGNORE INTO collection_books (book_id, collection_id) VALUES (?, ?);";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
@@ -73,7 +72,6 @@ public class CollectionDAO {
     }
 
     public ArrayList<Book> getBooksInCollection(int collectionId) {
-        // SỬA: Join bảng collection_books với bảng book để lấy thông tin sách
         String sql = "SELECT b.* FROM book b " +
                      "JOIN collection_books cb ON b.book_id = cb.book_id " +
                      "WHERE cb.collection_id = ?;";

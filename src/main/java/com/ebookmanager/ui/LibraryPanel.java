@@ -33,8 +33,6 @@ public class LibraryPanel extends JPanel {
         this.bookService = new BookService();
         
         initComponents();
-        
-        // Tự động tải lại danh sách khi chuyển tab sang Library
         this.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentShown(java.awt.event.ComponentEvent e) {
@@ -46,8 +44,6 @@ public class LibraryPanel extends JPanel {
     private void initComponents() {
         setLayout(new BorderLayout(20, 20));
         setOpaque(false);
-
-        // --- TOP BAR ---
         JPanel topPanel = new JPanel(new BorderLayout(10, 0));
         topPanel.setOpaque(false);
         
@@ -72,12 +68,12 @@ public class LibraryPanel extends JPanel {
         
         add(topPanel, BorderLayout.NORTH);
 
-        // --- LIST AREA ---
+
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBackground(Color.WHITE);
 
-        // Wrapper để đẩy danh sách lên trên cùng
+
         JPanel listWrapper = new JPanel(new BorderLayout());
         listWrapper.setBackground(Color.WHITE);
         listWrapper.add(listPanel, BorderLayout.NORTH);
@@ -87,7 +83,7 @@ public class LibraryPanel extends JPanel {
         scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         
-        // LUÔN HIỆN THANH CUỘN DỌC
+
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         
         add(scrollPane, BorderLayout.CENTER);
@@ -95,7 +91,7 @@ public class LibraryPanel extends JPanel {
         loadLibrary("");
     }
 
-    // --- LOAD LIBRARY ---
+
     private void loadLibrary(String keyword) {
         listPanel.removeAll();
         int userId = SessionManager.getInstance().getCurrentUser().getUserId();
@@ -109,7 +105,7 @@ public class LibraryPanel extends JPanel {
             lbl.setBorder(new EmptyBorder(20, 0, 0, 0));
             listPanel.add(lbl);
         } else {
-            listPanel.add(Box.createVerticalStrut(10)); // Spacer đầu
+            listPanel.add(Box.createVerticalStrut(10)); 
             for (BookProgress bp : progresses) {
                 Book book = bp.getBookReading();
                 currentLibraryBooks.add(book);
@@ -117,15 +113,13 @@ public class LibraryPanel extends JPanel {
                 if (!keyword.isEmpty() && !book.getBookTitle().toLowerCase().contains(keyword.toLowerCase())) {
                     continue;
                 }
-
-                // Tạo Panel cho mỗi cuốn sách
                 JPanel bookCard = new JPanel(new BorderLayout(10, 0));
                 bookCard.setBackground(new Color(220, 220, 220));
                 bookCard.setBorder(new EmptyBorder(10, 15, 10, 15));
                 bookCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
                 bookCard.setPreferredSize(new Dimension(0, 70));
                 
-                // Info Panel (Title + Rating)
+
                 JPanel infoP = new JPanel(new GridLayout(2, 1));
                 infoP.setOpaque(false);
                 
@@ -146,7 +140,6 @@ public class LibraryPanel extends JPanel {
                 infoP.add(lblTitle);
                 infoP.add(lblSub);
 
-                // Action Panel (Rate + Remove)
                 JPanel actionP = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
                 actionP.setOpaque(false);
                 
@@ -195,12 +188,6 @@ public class LibraryPanel extends JPanel {
         listPanel.revalidate();
         listPanel.repaint();
     }
-
-    // ===================================================================================
-    // --- COLLECTION MANAGER ---
-    // ===================================================================================
-    
-    // 1. MENU
     private void showCollectionMenuDialog() {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Collections", true);
         dialog.setSize(400, 300);
@@ -233,8 +220,6 @@ public class LibraryPanel extends JPanel {
         
         dialog.setVisible(true);
     }
-
-    // 2. CREATE COLLECTION
     private void showCreateCollectionDialog() {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "New Collection", true);
         dialog.setSize(400, 250);
@@ -267,8 +252,6 @@ public class LibraryPanel extends JPanel {
         
         dialog.setVisible(true);
     }
-
-    // 3. VIEW COLLECTIONS LIST
     private void showViewCollectionsDialog() {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Your Collections", true);
         dialog.setSize(500, 600);
@@ -366,8 +349,6 @@ public class LibraryPanel extends JPanel {
 
         dialog.setVisible(true);
     }
-
-    // 4. COLLECTION DETAIL
     private void showCollectionDetailDialog(Collection col) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), col.getCollectionName(), true);
         dialog.setSize(600, 500);
@@ -459,16 +440,12 @@ public class LibraryPanel extends JPanel {
 
         dialog.setVisible(true);
     }
-
-    // 5. ADD BOOK
     private void showAddBookDialog(JDialog parent, Collection col, Runnable onDone) {
         JDialog dialog = new JDialog(parent, "Add Book", true);
         dialog.setSize(500, 400);
         dialog.setLocationRelativeTo(parent);
         dialog.setLayout(new BorderLayout());
         dialog.getContentPane().setBackground(new Color(180, 180, 180));
-
-        // Search Area
         JPanel searchP = new JPanel(new FlowLayout());
         searchP.setOpaque(false);
         
@@ -478,8 +455,6 @@ public class LibraryPanel extends JPanel {
         searchP.add(txtS);
         searchP.add(btnS);
         dialog.add(searchP, BorderLayout.NORTH);
-
-        // List Area
         JPanel listP = new JPanel();
         listP.setLayout(new BoxLayout(listP, BoxLayout.Y_AXIS));
         listP.setBackground(new Color(180, 180, 180));
@@ -491,8 +466,6 @@ public class LibraryPanel extends JPanel {
         Runnable load = () -> {
             listP.removeAll();
             String k = txtS.getText().toLowerCase();
-            
-            // --- [ĐIỂM CẬP NHẬT] Chỉ tìm kiếm trong thư viện cá nhân (currentLibraryBooks) ---
             ArrayList<Book> filteredBooks = new ArrayList<>();
             for (Book b : currentLibraryBooks) {
                 if (b.getBookTitle().toLowerCase().contains(k) || b.getAuthorName().toLowerCase().contains(k)) {
@@ -529,8 +502,6 @@ public class LibraryPanel extends JPanel {
         
         btnS.addActionListener(e -> load.run());
         load.run();
-
-        // Footer
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         footer.setBackground(new Color(180, 180, 180));
         

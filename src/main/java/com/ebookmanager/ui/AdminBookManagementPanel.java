@@ -29,14 +29,13 @@ public class AdminBookManagementPanel extends JPanel {
         setLayout(new BorderLayout(20, 20));
         setOpaque(false);
 
-        // --- HEADER ---
         JLabel lblHeader = new JLabel("Manage Books (Admin Mode)");
         lblHeader.setFont(UIUtils.FONT_HEADER);
         lblHeader.setForeground(UIUtils.COLOR_TEXT_PRIMARY);
         lblHeader.setBorder(new EmptyBorder(0, 0, 10, 0));
         add(lblHeader, BorderLayout.NORTH);
 
-        // --- LIST ---
+
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setOpaque(false);
@@ -48,8 +47,6 @@ public class AdminBookManagementPanel extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         
         add(scrollPane, BorderLayout.CENTER);
-
-        // Tải danh sách sách
         loadBooks();
     }
 
@@ -61,7 +58,7 @@ public class AdminBookManagementPanel extends JPanel {
             listPanel.add(new JLabel("No books in system."));
         } else {
             for (Book book : books) {
-                // Panel cho mỗi cuốn sách
+
                 JPanel p = new JPanel(new BorderLayout());
                 p.setBackground(Color.WHITE);
                 p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
@@ -70,12 +67,12 @@ public class AdminBookManagementPanel extends JPanel {
                     new EmptyBorder(10, 15, 10, 15)
                 ));
                 
-                // Tên sách
+
                 JLabel lblTitle = new JLabel(book.getBookTitle() + " - " + book.getAuthorName());
                 lblTitle.setFont(UIUtils.FONT_GENERAL);
                 p.add(lblTitle, BorderLayout.CENTER);
                 
-                // Nút Delete
+
                 JButton btnDelete = new JButton("Delete");
                 btnDelete.setFont(new Font("Segoe UI", Font.BOLD, 12));
                 btnDelete.setBackground(new Color(255, 230, 230)); // Nền đỏ nhạt
@@ -84,7 +81,7 @@ public class AdminBookManagementPanel extends JPanel {
                 btnDelete.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
                 btnDelete.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 
-                // --- SỰ KIỆN XÓA SÁCH ---
+
                 btnDelete.addActionListener(e -> {
                     int confirm = JOptionPane.showConfirmDialog(
                         this, 
@@ -100,8 +97,6 @@ public class AdminBookManagementPanel extends JPanel {
                 });
 
                 p.add(btnDelete, BorderLayout.EAST);
-                
-                // Hiệu ứng hover dòng
                 p.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseEntered(MouseEvent e) { p.setBackground(new Color(245, 245, 250)); }
@@ -119,15 +114,10 @@ public class AdminBookManagementPanel extends JPanel {
     private void deleteBookProcess(Book book) {
         try {
             User currentUser = SessionManager.getInstance().getCurrentUser();
-            
-            // Kiểm tra quyền Admin
             if (currentUser instanceof Admin) {
-                // Gọi Service để xóa
                 adminService.deleteBook(book.getBookId(), (Admin) currentUser);
                 
                 JOptionPane.showMessageDialog(this, "Book deleted successfully!");
-                
-                // Tải lại danh sách ngay lập tức
                 loadBooks();
             } else {
                 JOptionPane.showMessageDialog(this, "Error: You are not logged in as Admin.", "Access Denied", JOptionPane.ERROR_MESSAGE);

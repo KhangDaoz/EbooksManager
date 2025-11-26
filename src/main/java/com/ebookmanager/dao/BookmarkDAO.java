@@ -10,10 +10,7 @@ import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.Bookmark;
 
 public class BookmarkDAO { 
-
-    // Đã cập nhật: Thêm tham số 'name' và sửa SQL
     public void createBookmark(int userId, int bookId, String locationData, String name) {
-        // Thêm cột name vào câu lệnh INSERT
         String sql = "INSERT INTO bookmark (user_id, book_id, location_data, name) VALUES (?, ?, ?, ?);";
         
         try (Connection conn = DatabaseConnector.getConnection();
@@ -22,7 +19,7 @@ public class BookmarkDAO {
             query.setInt(1, userId);
             query.setInt(2, bookId);
             query.setString(3, locationData);
-            query.setString(4, name); // Set giá trị cho cột name
+            query.setString(4, name); 
             
             query.executeUpdate();
         } catch (SQLException e) {
@@ -42,10 +39,9 @@ public class BookmarkDAO {
             
             try (ResultSet res = query.executeQuery()) {
                 while (res.next()) {
-                    // Đảm bảo constructor của Bookmark khớp với thứ tự này
                     Bookmark bookmark = new Bookmark(
                         res.getInt("bookmark_id"),
-                        res.getString("name"), // Lấy cột name từ DB
+                        res.getString("name"), 
                         res.getString("location_data")
                     );
                     bookmarks.add(bookmark);

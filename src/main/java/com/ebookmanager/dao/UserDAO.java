@@ -13,7 +13,6 @@ import java.util.ArrayList;
 public class UserDAO {
 
     public void addUser(String userName, String hashedPassword, String role) {
-        // MySQL: Xóa RETURNING user_id, thêm backticks cho `user`
         String sql = "INSERT INTO `user` (user_name, hashed_password, role) VALUES (?, ?, ?);";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
@@ -72,10 +71,6 @@ public class UserDAO {
         return users;
     }
 
-    // public boolean checkUserExists(String userName) {
-    //     return findByUsername(userName) != null;
-    // }
-
     public void updateUserPassword(int user_id, String new_hashed_password) {
         String sql = "UPDATE `user` SET hashed_password = ? WHERE user_id = ?;";
         try (Connection conn = DatabaseConnector.getConnection();
@@ -87,20 +82,6 @@ public class UserDAO {
             System.err.println("ERROR updating user password: " + e.getMessage());
         }
     }
-
-    // public int countAdmins() {
-    //     String sql = "SELECT COUNT(*) FROM `user` WHERE role = 'Admin';";
-    //     try (Connection conn = DatabaseConnector.getConnection();
-    //          PreparedStatement query = conn.prepareStatement(sql);
-    //          ResultSet res = query.executeQuery()) {
-    //         if (res.next()) {
-    //             return res.getInt(1);
-    //         }
-    //     } catch (SQLException e) {
-    //         System.err.println("ERROR counting admins: " + e.getMessage());
-    //     }
-    //     return 0;
-    // }
 
     private User mapResultSetToUser(ResultSet res) throws SQLException {
         int userId = res.getInt("user_id");

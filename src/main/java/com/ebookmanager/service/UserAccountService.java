@@ -23,13 +23,6 @@ public class UserAccountService {
             throw new SecurityException("Incorrect password");
         }
         
-        // if ("Admin".equals(currentUser.getRole())) {
-        //     int adminCount = userDAO.countAdmins();
-        //     if (adminCount <= 1) {
-        //         throw new IllegalStateException("Cannot delete the last admin account");
-        //     }
-        // }
-        
         userDAO.deleteUser(currentUser.getUserId());
         
         SessionManager.getInstance().logout();

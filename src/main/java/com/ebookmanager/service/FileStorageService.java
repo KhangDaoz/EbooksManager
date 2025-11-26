@@ -5,8 +5,6 @@ import java.nio.file.*;
 import java.util.UUID;
 
 public class FileStorageService {
-    
-    // Storage configuration
     private static final String STORAGE_FOLDER_NAME = "book_storage";
     private final Path storageLocation;
     
@@ -28,8 +26,6 @@ public class FileStorageService {
         if (file == null || !file.exists()) {
             throw new IllegalArgumentException("File does not exist");
         }
-        
-        // Validate file size (e.g., max 100MB)
         long maxSize = 100 * 1024 * 1024; // 100MB
         if (file.length() > maxSize) {
             throw new IOException("File size exceeds maximum allowed size (100MB)");

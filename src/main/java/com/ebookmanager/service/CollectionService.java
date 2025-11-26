@@ -3,7 +3,7 @@ package com.ebookmanager.service;
 import java.util.ArrayList;
 import com.ebookmanager.dao.CollectionDAO;
 import com.ebookmanager.model.Book;
-import com.ebookmanager.model.Collection; // Import model Collection
+import com.ebookmanager.model.Collection; 
 import com.ebookmanager.model.User;
 
 public class CollectionService {
@@ -90,8 +90,6 @@ public class CollectionService {
         
         return collectionDAO.getBooksInCollection(collectionId);
     }
-
-    // === [QUAN TRỌNG] THÊM HÀM NÀY ĐỂ LIBRARY PANEL CHẠY ĐƯỢC ===
     public ArrayList<Collection> getCollectionsForUser(int userId) {
         return collectionDAO.getCollectionsForUser(userId);
     }

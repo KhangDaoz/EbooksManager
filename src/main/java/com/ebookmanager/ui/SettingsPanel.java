@@ -10,13 +10,9 @@ public class SettingsPanel extends JPanel {
     public SettingsPanel() {
         setLayout(new GridBagLayout()); 
         setOpaque(false);
-        
-        // Panel chứa nội dung chính
         JPanel box = new JPanel(new GridLayout(4, 1, 0, 15));
         box.setBackground(new Color(240, 240, 240)); 
         box.setBorder(new EmptyBorder(30, 50, 30, 50));
-        
-        // Các ô nhập liệu
         JPasswordField oldP = new JPasswordField(20); 
         oldP.setBorder(BorderFactory.createTitledBorder("Old Password"));
         
@@ -25,8 +21,6 @@ public class SettingsPanel extends JPanel {
         
         JPasswordField cfmP = new JPasswordField(20); 
         cfmP.setBorder(BorderFactory.createTitledBorder("Confirm Password"));
-        
-        // Panel chứa nút
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0)); 
         btns.setOpaque(false);
         
@@ -38,8 +32,6 @@ public class SettingsPanel extends JPanel {
         btnDel.setPreferredSize(new Dimension(120, 35));
         
         UserAccountService svc = new UserAccountService();
-        
-        // --- 1. LOGIC ĐỔI MẬT KHẨU ---
         btnChange.addActionListener(e -> {
             try { 
                 svc.changePassword(new String(oldP.getPassword()), new String(newP.getPassword())); 
@@ -49,10 +41,7 @@ public class SettingsPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, ex.getMessage()); 
             }
         });
-
-        // --- 2. LOGIC XÓA TÀI KHOẢN (ĐÃ THÊM) ---
         btnDel.addActionListener(e -> {
-            // Lấy mật khẩu từ ô Old Password để xác nhận
             String password = new String(oldP.getPassword());
             
             if (password.isEmpty()) {
@@ -69,12 +58,9 @@ public class SettingsPanel extends JPanel {
             
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
-                    // Gọi service xóa tài khoản (cần mật khẩu)
                     svc.deleteOwnAccount(password);
                     
                     JOptionPane.showMessageDialog(this, "Account Deleted. Goodbye!");
-                    
-                    // Đăng xuất và quay về màn hình Login
                     SessionManager.getInstance().logout();
                     Window win = SwingUtilities.getWindowAncestor(this);
                     if (win != null) win.dispose();
@@ -85,8 +71,6 @@ public class SettingsPanel extends JPanel {
                 }
             }
         });
-
-        // Add components vào Box
         box.add(oldP); 
         box.add(newP); 
         box.add(cfmP);

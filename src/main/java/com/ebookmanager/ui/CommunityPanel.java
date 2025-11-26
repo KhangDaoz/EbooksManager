@@ -14,14 +14,14 @@ import javax.swing.border.EmptyBorder;
 public class CommunityPanel extends JPanel {
     private JPanel listPanel;
     private BookService bookService;
-    private BookProgressService progressService; // Thêm Service để check sở hữu
+    private BookProgressService progressService; 
     private MainView mainView;
     private JTextField txtSearch;
 
     public CommunityPanel(MainView mainView) {
         this.mainView = mainView;
         this.bookService = new BookService(); 
-        this.progressService = new BookProgressService(); // Khởi tạo
+        this.progressService = new BookProgressService(); 
         
         initComponents();
         
@@ -36,8 +36,6 @@ public class CommunityPanel extends JPanel {
     private void initComponents() {
         setLayout(new BorderLayout(20, 20));
         setOpaque(false);
-
-        // --- 1. TOP BAR ---
         JPanel topPanel = new JPanel(new BorderLayout(10, 0));
         topPanel.setOpaque(false);
         
@@ -84,8 +82,6 @@ public class CommunityPanel extends JPanel {
         topPanel.add(rightBox, BorderLayout.EAST);
         
         add(topPanel, BorderLayout.NORTH);
-
-        // --- 2. LIST AREA ---
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBackground(Color.WHITE); 
@@ -160,8 +156,6 @@ public class CommunityPanel extends JPanel {
         listPanel.revalidate();
         listPanel.repaint();
     }
-
-    // --- DIALOG 1: CHI TIẾT SÁCH (LOGIC PREVIEW/READ) ---
     private void showBookDetailDialog(Book book) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Book Detail", true);
         dialog.setSize(500, 400); 
@@ -192,8 +186,7 @@ public class CommunityPanel extends JPanel {
         
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 15));
         footer.setBackground(new Color(245, 245, 245));
-        
-        // --- LOGIC KIỂM TRA SỞ HỮU ---
+
         int userId = SessionManager.getInstance().getCurrentUser().getUserId();
         boolean isOwned = progressService.isBookInLibrary(userId, book.getBookId());
 
@@ -202,22 +195,22 @@ public class CommunityPanel extends JPanel {
         JButton btnClose = new JButton("Close");
 
         if (isOwned) {
-            // Đã có -> Nút READ
+
             btnReadOrPreview = new JButton("Read");
             btnAddLib.setEnabled(false);
             btnAddLib.setText("In Library");
             
             btnReadOrPreview.addActionListener(e -> {
-                mainView.openReadingView(book, false); // false = Lưu tiến độ
+                mainView.openReadingView(book, false); 
                 dialog.dispose();
             });
         } else {
-            // Chưa có -> Nút PREVIEW
+
             btnReadOrPreview = new JButton("Preview");
-            btnReadOrPreview.setBackground(new Color(255, 250, 205)); // Màu vàng nhạt
+            btnReadOrPreview.setBackground(new Color(255, 250, 205)); 
             
             btnReadOrPreview.addActionListener(e -> {
-                mainView.openReadingView(book, true); // true = Không lưu
+                mainView.openReadingView(book, true); 
                 dialog.dispose();
             });
         }
@@ -225,8 +218,6 @@ public class CommunityPanel extends JPanel {
         styleDialogButton(btnReadOrPreview); 
         styleDialogButton(btnAddLib); 
         styleDialogButton(btnClose);
-
-        // Sự kiện thêm vào Library
         if (!isOwned) {
             btnAddLib.addActionListener(e -> {
                 try {
@@ -244,7 +235,6 @@ public class CommunityPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    // --- CÁC DIALOG KHÁC GIỮ NGUYÊN ---
     private void showUploadDialog() {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Upload New Book", true);
         dialog.setSize(450, 400); 

@@ -6,8 +6,6 @@ import com.ebookmanager.db.DatabaseConnector;
 import com.ebookmanager.model.Book;
 
 public class BookDAO {
-    
-    // [CẬP NHẬT] Thêm tham số uploaderId
     public int addBook(String bookTitle, String authorName, String filePath, String publisher, String genre, int uploaderId) {
         String sql = "INSERT INTO book (book_title, author_name, file_path, publisher, genre, uploaded_by) VALUES (?, ?, ?, ?, ?, ?);";
         try (Connection conn = DatabaseConnector.getConnection();
@@ -17,7 +15,7 @@ public class BookDAO {
             query.setString(3, filePath);
             query.setString(4, publisher);
             query.setString(5, genre);
-            query.setInt(6, uploaderId); // Lưu ID người upload
+            query.setInt(6, uploaderId); 
             
             int affectedRows = query.executeUpdate();
             if (affectedRows > 0) {
@@ -29,13 +27,10 @@ public class BookDAO {
         return -1;
     }
 
-    // [MỚI] Tìm sách theo người upload
     public ArrayList<Book> findBooksByUploader(int userId) {
         String sql = "SELECT * FROM book WHERE uploaded_by = ?;";
         return executeSelect(sql, userId);
     }
-
-    // --- CÁC HÀM CŨ GIỮ NGUYÊN ---
     public ArrayList<Book> findAllBooks() {
         String sql = "SELECT * FROM book;";
         return executeSelect(sql);

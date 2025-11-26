@@ -15,7 +15,7 @@ public class LoginView extends JFrame {
     public LoginView() {
         authService = new AuthenticationService();
         setTitle("E-Book Manager");
-        setSize(1000, 650); // Tăng kích thước cửa sổ lên một chút
+        setSize(1000, 650); 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -32,34 +32,27 @@ public class LoginView extends JFrame {
     private JPanel createAuthPanel(boolean isLogin) {
         JPanel panel = new JPanel(new GridLayout(1, 2));
 
-        // --- 1. LEFT SIDE (Logo & Branding) ---
         JPanel left = new JPanel(new GridBagLayout());
         left.setBackground(UIUtils.COLOR_DARK_BG);
         
         JLabel title = new JLabel("<html><center>E-BOOK<br>MANAGER</center></html>", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 48)); // Font to hơn
+        title.setFont(new Font("Segoe UI", Font.BOLD, 48)); 
         title.setForeground(Color.WHITE);
         left.add(title);
-
-        // --- 2. RIGHT SIDE (Form) ---
         JPanel right = new JPanel(new GridBagLayout());
         right.setBackground(Color.WHITE);
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        
-        // Header
         JLabel header = new JLabel(isLogin ? "Welcome Back" : "Create Account");
         header.setFont(new Font("Segoe UI", Font.BOLD, 32));
         header.setForeground(UIUtils.COLOR_DARK_BG);
         header.setHorizontalAlignment(SwingConstants.CENTER);
         
         gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 30, 0); // Cách lề dưới header
+        gbc.insets = new Insets(0, 0, 30, 0); 
         right.add(header, gbc);
-
-        // Inputs
         int currentRow = 1;
         if (isLogin) {
             txtLoginUser = createStyledField();
@@ -84,8 +77,6 @@ public class LoginView extends JFrame {
             addLabeledField(right, "Confirm Password", txtRegConfirm, gbc, currentRow);
             currentRow += 2;
         }
-
-        // Main Action Button (LOGIN / REGISTER)
         JButton btn = new JButton(isLogin ? "LOGIN" : "REGISTER");
         stylePrimaryButton(btn);
         
@@ -106,10 +97,8 @@ public class LoginView extends JFrame {
         });
         
         gbc.gridy = currentRow++;
-        gbc.insets = new Insets(20, 0, 15, 0); // Khoảng cách nút
+        gbc.insets = new Insets(20, 0, 15, 0); 
         right.add(btn, gbc);
-        
-        // Switch Link
         JButton switchBtn = new JButton(isLogin ? "No account? Register here" : "Have an account? Login");
         switchBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         switchBtn.setForeground(UIUtils.COLOR_ACCENT);
@@ -126,48 +115,38 @@ public class LoginView extends JFrame {
         panel.add(right);
         return panel;
     }
-
-    // --- HELPER METHODS CHO UI ĐẸP HƠN ---
-
-    // Helper thêm Label + Input Field vào panel gọn gàng
     private void addLabeledField(JPanel panel, String labelText, JComponent field, GridBagConstraints gbc, int y) {
         JLabel label = new JLabel(labelText);
         label.setFont(new Font("Segoe UI", Font.BOLD, 14));
         label.setForeground(Color.GRAY);
         
         gbc.gridy = y;
-        gbc.insets = new Insets(10, 0, 5, 0); // Khoảng cách trên dưới label
+        gbc.insets = new Insets(10, 0, 5, 0); 
         panel.add(label, gbc);
         
         gbc.gridy = y + 1;
-        gbc.insets = new Insets(0, 0, 5, 0); // Khoảng cách dưới input
+        gbc.insets = new Insets(0, 0, 5, 0); 
         panel.add(field, gbc);
     }
-
-    // Tạo ô nhập văn bản to đẹp
     private JTextField createStyledField() {
         JTextField tf = new JTextField(20);
-        tf.setPreferredSize(new Dimension(350, 45)); // Rộng 350, Cao 45
-        tf.setFont(new Font("Segoe UI", Font.PLAIN, 16)); // Chữ to
+        tf.setPreferredSize(new Dimension(350, 45)); 
+        tf.setFont(new Font("Segoe UI", Font.PLAIN, 16)); 
         tf.setBorder(UIUtils.createRoundedBorder());
         return tf;
     }
-
-    // Tạo ô nhập mật khẩu to đẹp
     private JPasswordField createStyledPasswordField() {
         JPasswordField pf = new JPasswordField(20);
-        pf.setPreferredSize(new Dimension(350, 45)); // Rộng 350, Cao 45
+        pf.setPreferredSize(new Dimension(350, 45)); 
         pf.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         pf.setBorder(UIUtils.createRoundedBorder());
         return pf;
     }
-
-    // Style nút bấm chính to đẹp
     private void stylePrimaryButton(JButton btn) {
-        btn.setPreferredSize(new Dimension(350, 50)); // Nút to (Rộng 350, Cao 50)
+        btn.setPreferredSize(new Dimension(350, 50)); 
         btn.setBackground(UIUtils.COLOR_ACCENT);
         btn.setForeground(Color.WHITE);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 18)); // Chữ to đậm
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 18)); 
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createEmptyBorder());
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));

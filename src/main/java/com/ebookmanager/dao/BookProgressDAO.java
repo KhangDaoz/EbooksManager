@@ -13,7 +13,6 @@ import com.ebookmanager.model.BookProgress;
 public class BookProgressDAO {
     
     public ArrayList<BookProgress> getBookProgresses(int userId) {
-        // JOIN để lấy thông tin sách
         String sql = "SELECT bp.*, b.* FROM book_progress bp JOIN book b ON bp.book_id = b.book_id WHERE bp.user_id = ?;";
         ArrayList<BookProgress> bookProgresses = new ArrayList<>();
         
@@ -35,7 +34,7 @@ public class BookProgressDAO {
                         res.getInt("current_page"), 
                         res.getDate("last_read"), 
                         res.getInt("personal_rating"), 
-                        new ArrayList<>(), // Bookmarks sẽ được load riêng ở Service
+                        new ArrayList<>(), 
                         book
                     );
                     bookProgresses.add(progress);
@@ -64,7 +63,6 @@ public class BookProgressDAO {
     }
 
     public void addBookToLibrary(int userId, int bookId) {
-        // Sử dụng INSERT IGNORE để tránh lỗi nếu sách đã có trong thư viện
         String sql = "INSERT IGNORE INTO book_progress (user_id, book_id) VALUES (?, ?);";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement query = conn.prepareStatement(sql)) {
@@ -101,7 +99,7 @@ public class BookProgressDAO {
                         res.getDate("last_read"),
                         res.getInt("personal_rating"),
                         new ArrayList<>(),
-                        null // Service sẽ set Book sau
+                        null 
                     );
                 }
             }
@@ -138,8 +136,4 @@ public class BookProgressDAO {
             System.err.println("ERROR rating book: " + e.getMessage());
         }
     }
-    
-    // public boolean isBookInLibrary(int userId, int bookId) {
-    //     return checkIfBookIsInLibrary(userId, bookId);
-    // }
 }

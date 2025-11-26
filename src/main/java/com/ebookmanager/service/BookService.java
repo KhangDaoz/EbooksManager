@@ -21,31 +21,24 @@ public class BookService {
     public int uploadBook(File bookFile, Book book) throws IOException {
         User currentUser = SessionManager.getInstance().getCurrentUser();
         if (currentUser == null) throw new SecurityException("No user logged in");
-        
-        // Lưu file vật lý
         String storedPath = fileService.saveFile(bookFile, bookFile.getName());
         book.setFilePath(storedPath);
-
-        // [CẬP NHẬT] Truyền thêm currentUser.getUserId()
         int bookId = bookDAO.addBook(
             book.getBookTitle(),
             book.getAuthorName(),
             book.getFilePath(),
             book.getPublisher(),
             book.getGenre(),
-            currentUser.getUserId() // <--- ID người upload
+            currentUser.getUserId() 
         );
         
         if (bookId > 0) book.setBookId(bookId);
         return bookId;
     }
     
-    // [MỚI] Lấy sách do user upload
     public ArrayList<Book> getUploadedBooks(int userId) {
         return bookDAO.findBooksByUploader(userId);
     }
-
-    // --- CÁC HÀM KHÁC GIỮ NGUYÊN ---
     public InputStream readBook(Book book) throws IOException { return fileService.readFileAsResource(book.getFilePath()); }
     public ArrayList<Book> findAllBooks() { return bookDAO.findAllBooks(); }
     public ArrayList<Book> searchBooks(String term) { return bookDAO.searchBooks(term); }
