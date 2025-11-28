@@ -1,10 +1,10 @@
 package com.ebookmanager.main;
-import com.ebookmanager.ui.LoginView;
+import com.ebookmanager.ui.LoginAndRegister;
 import javax.swing.SwingUtilities;
 public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            LoginView loginView = new LoginView();
+            LoginAndRegister loginView = new LoginAndRegister();
             loginView.setVisible(true);
         });
     }
