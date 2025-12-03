@@ -7,7 +7,7 @@ import java.sql.SQLException;
 public final class DatabaseConnector {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/ebookmanager";
     private static final String DB_USER = "root";
-    private static final String DB_PASSW = "123456";
+    private static final String DB_PASSW = "1812";
 
     static {
         try {
