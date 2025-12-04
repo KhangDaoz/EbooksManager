@@ -72,7 +72,8 @@ public class ReadingPanel extends javax.swing.JPanel {
         lblPageInfo = new javax.swing.JLabel();
         btnBookmarks = new javax.swing.JButton();
         scrollPaneBook = new javax.swing.JScrollPane();
-        lblPageImage = new javax.swing.JLabel();
+        pnlWrapper = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
         pnlBottom = new javax.swing.JPanel();
         btnPrev = new javax.swing.JButton();
         btnNext = new javax.swing.JButton();
@@ -145,13 +146,16 @@ public class ReadingPanel extends javax.swing.JPanel {
         add(pnlTop, java.awt.BorderLayout.NORTH);
 
         scrollPaneBook.setBorder(null);
-        add(scrollPaneBook, java.awt.BorderLayout.CENTER);
+        scrollPaneBook.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+        scrollPaneBook.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
-        lblPageImage.setBackground(new java.awt.Color(80, 80, 80));
-        lblPageImage.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblPageImage.setVerticalAlignment(javax.swing.SwingConstants.TOP);
-        lblPageImage.setOpaque(true);
-        add(lblPageImage, java.awt.BorderLayout.CENTER);
+        pnlWrapper.setBackground(new java.awt.Color(51, 51, 51));
+        pnlWrapper.setLayout(new java.awt.GridBagLayout());
+        pnlWrapper.add(jLabel1, new java.awt.GridBagConstraints());
+
+        scrollPaneBook.setViewportView(pnlWrapper);
+
+        add(scrollPaneBook, java.awt.BorderLayout.CENTER);
 
         pnlBottom.setOpaque(false);
         pnlBottom.setLayout(new java.awt.BorderLayout());
@@ -258,26 +262,38 @@ public class ReadingPanel extends javax.swing.JPanel {
 
     
     private void renderCurrentPage() {
-        if (document == null) return;
-        try {
-            
-            float scale = 1.5f; 
-            BufferedImage image = pdfRenderer.renderImage(currentPage, scale);
-            
-            
-            lblPageImage.setIcon(new ImageIcon(image));
-            lblPageImage.setText(""); 
-            
-            
-            lblPageInfo.setText("Page " + (currentPage + 1) + " / " + totalPages);
-            
-            
+    if (document == null) return;
+    try {
+        float scale = 1.5f; 
+        BufferedImage image = pdfRenderer.renderImage(currentPage, scale);
+
+        
+        
+        
+        jLabel1.setIcon(new ImageIcon(image));
+        jLabel1.setText("");
+
+        
+        jLabel1.setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
+        
+        
+        jLabel1.revalidate();
+        jLabel1.repaint();
+
+        
+
+        lblPageInfo.setText("Page " + (currentPage + 1) + " / " + totalPages);
+        
+        
+        SwingUtilities.invokeLater(() -> {
             scrollPaneBook.getVerticalScrollBar().setValue(0);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            scrollPaneBook.getHorizontalScrollBar().setValue(0);
+        });
+
+    } catch (Exception e) {
+        e.printStackTrace();
     }
+}
 
     
     private void changePage(int delta) {
@@ -418,13 +434,14 @@ public class ReadingPanel extends javax.swing.JPanel {
     private javax.swing.JButton btnClose;
     private javax.swing.JButton btnNext;
     private javax.swing.JButton btnPrev;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
-    private javax.swing.JLabel lblPageImage;
     private javax.swing.JLabel lblPageInfo;
     private javax.swing.JPanel pnlBottom;
     private javax.swing.JPanel pnlTop;
+    private javax.swing.JPanel pnlWrapper;
     private javax.swing.JScrollPane scrollPaneBook;
     // End of variables declaration//GEN-END:variables
 }

@@ -39,10 +39,22 @@ public class BookService {
     public ArrayList<Book> getUploadedBooks(int userId) {
         return bookDAO.findBooksByUploader(userId);
     }
-    public InputStream readBook(Book book) throws IOException { return fileService.readFileAsResource(book.getFilePath()); }
-    public ArrayList<Book> findAllBooks() { return bookDAO.findAllBooks(); }
-    public ArrayList<Book> searchBooks(String term) { return bookDAO.searchBooks(term); }
-    public Book findBookById(int id) { return bookDAO.findBookById(id); }
-    public boolean deleteBook(int id, User user) throws IOException { return bookDAO.deleteBook(id); }
-    public boolean updateBook(Book book) { return bookDAO.updateBook(book.getBookId(), book.getBookTitle(), book.getAuthorName(), book.getFilePath(), book.getPublisher(), book.getGenre()); }
+    public InputStream readBook(Book book) throws IOException { 
+        return fileService.readFileAsResource(book.getFilePath()); 
+    }
+    public ArrayList<Book> findAllBooks() { 
+        return bookDAO.findAllBooks(); 
+    }
+    public ArrayList<Book> searchBooks(String term) {
+        return bookDAO.searchBooks(term); 
+    }
+    public Book findBookById(int id) { 
+        return bookDAO.findBookById(id); 
+    }
+    public boolean deleteBook(int id, User user) throws IOException { 
+        return bookDAO.deleteBook(id); 
+    }
+    public boolean updateBook(Book book) { 
+        return bookDAO.updateBook(book.getBookId(), book.getBookTitle(), book.getAuthorName(), book.getFilePath(), book.getPublisher(), book.getGenre()); 
+    }
 }
