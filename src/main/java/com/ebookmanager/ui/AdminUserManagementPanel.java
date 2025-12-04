@@ -19,22 +19,17 @@ public class AdminUserManagementPanel extends javax.swing.JPanel {
     public AdminUserManagementPanel() {
         this.userDAO = new UserDAO();
         
-        initComponents(); // NetBeans sinh giao diện
+        initComponents(); 
         
-        customInit();     // Cấu hình thêm (Scroll, trong suốt...)
-        loadUsers();      // Tải danh sách user ngay khi mở
+        customInit();     
+        loadUsers();     
     }
 private void customInit() {
-        // Tăng tốc độ cuộn chuột
         jScrollPane2.getVerticalScrollBar().setUnitIncrement(16);
-        
-        // Làm trong suốt vùng hiển thị để thấy nền nếu cần
         jScrollPane2.getViewport().setOpaque(false);
     }
-
-    // --- LOGIC TẢI DANH SÁCH USER ---
     private void loadUsers() {
-        listPanel.removeAll(); // Xóa danh sách cũ
+        listPanel.removeAll(); 
         ArrayList<User> users = userDAO.findAllUsers();
 
         if (users == null || users.isEmpty()) {
@@ -44,45 +39,33 @@ private void customInit() {
             listPanel.add(emptyLbl);
         } else {
             for (User user : users) {
-                // 1. Tạo hàng (Row) chứa thông tin User
                 JPanel row = new JPanel(new BorderLayout());
                 row.setBackground(Color.WHITE);
-                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50)); // Chiều cao cố định 50px
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50)); 
                 row.setPreferredSize(new Dimension(0, 50));
-                
-                // Viền mờ ngăn cách giữa các hàng
                 row.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY),
                     new EmptyBorder(10, 15, 10, 15)
                 ));
-
-                // 2. Hiển thị Tên User + Vai trò
                 String roleText = user.getRole().equalsIgnoreCase("ADMIN") ? " [Admin]" : " [User]";
                 JLabel lblName = new JLabel(user.getUserName() + roleText);
                 lblName.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-                
-                // Nếu là Admin thì tô đậm và đổi màu chữ để nổi bật
                 if (user.getRole().equalsIgnoreCase("ADMIN")) {
                     lblName.setFont(new Font("Segoe UI", Font.BOLD, 14));
-                    lblName.setForeground(new Color(44, 62, 80)); // Màu xanh đen
+                    lblName.setForeground(new Color(44, 62, 80)); 
                 }
                 
                 row.add(lblName, BorderLayout.CENTER);
-
-                // 3. Tạo nút Xóa (Delete)
                 JButton btnDelete = new JButton("Delete");
-                styleDeleteButton(btnDelete); // Gọi hàm trang trí nút đỏ
-
-                // Sự kiện bấm nút Xóa
+                styleDeleteButton(btnDelete); 
                 btnDelete.addActionListener(e -> {
-                    // Logic bảo mật: Không cho phép tự xóa chính mình
                     User currentUser = SessionManager.getInstance().getCurrentUser();
                     if (currentUser != null && currentUser.getUserId() == user.getUserId()) {
                         JOptionPane.showMessageDialog(this, "You cannot delete your own account!", "Action Denied", JOptionPane.WARNING_MESSAGE);
                         return;
                     }
 
-                    // Hộp thoại xác nhận
+   
                     int confirm = JOptionPane.showConfirmDialog(
                         this,
                         "Are you sure you want to delete user: " + user.getUserName() + "?\nThis action cannot be undone.",
@@ -98,29 +81,23 @@ private void customInit() {
 
                 row.add(btnDelete, BorderLayout.EAST);
 
-                // 4. Hiệu ứng Hover chuột (đổi màu nền khi di vào)
                 row.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseEntered(MouseEvent e) { 
-                        row.setBackground(new Color(245, 245, 250)); // Màu xám nhạt
+                        row.setBackground(new Color(245, 245, 250)); 
                     }
                     @Override
                     public void mouseExited(MouseEvent e) { 
-                        row.setBackground(Color.WHITE); // Trả về màu trắng
+                        row.setBackground(Color.WHITE); 
                     }
                 });
-
-                // Thêm hàng vào danh sách
                 listPanel.add(row);
             }
         }
-        
-        // Cập nhật giao diện sau khi thêm xong
         listPanel.revalidate();
         listPanel.repaint();
     }
-    
-    // Hàm trang trí nút Xóa (Màu đỏ nhạt, chữ đỏ)
+
     private void styleDeleteButton(JButton btn) {
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setBackground(new Color(255, 230, 230)); 
@@ -129,14 +106,10 @@ private void customInit() {
         btn.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
-
-    // --- LOGIC XÓA USER (Sửa lỗi hàm void) ---
     private void deleteUserProcess(int userId) {
         try {
-            // Vì UserDAO trả về void nên ta gọi trực tiếp
-            userDAO.deleteUser(userId);
             
-            // Mặc định báo thành công và load lại
+            userDAO.deleteUser(userId);
             JOptionPane.showMessageDialog(this, "User deleted successfully!");
             loadUsers(); 
             

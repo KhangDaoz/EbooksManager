@@ -23,42 +23,29 @@ public class SettingPanel extends javax.swing.JPanel {
     }
 
     private void customInit() {
-        // Style cho nút Change (Màu xanh)
         btnChange.setBackground(new Color(52, 152, 219));
         btnChange.setForeground(Color.WHITE);
         btnChange.setFocusPainted(false);
         btnChange.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // Style cho nút Delete (Màu đỏ - Cảnh báo)
         btnDelete.setBackground(new Color(231, 76, 60)); 
         btnDelete.setForeground(Color.WHITE);
         btnDelete.setFocusPainted(false);
         btnDelete.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // Tăng kích thước nút cho đẹp
         btnChange.setPreferredSize(new Dimension(100, 35));
         btnDelete.setPreferredSize(new Dimension(140, 35));
     }
-
-    // --- LOGIC ĐỔI MẬT KHẨU ---
     private void performChangePassword() {
         String oldP = new String(txtOldPass.getPassword());
         String newP = new String(txtNewPass.getPassword());
         String cfmP = new String(txtConfirmPass.getPassword());
-        
-        // Kiểm tra mật khẩu mới và xác nhận có khớp không
         if (!newP.equals(cfmP)) {
             JOptionPane.showMessageDialog(this, "New passwords do not match!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
-        // Gọi Service để xử lý
         UserAccountService svc = new UserAccountService();
         try { 
             svc.changePassword(oldP, newP); 
             JOptionPane.showMessageDialog(this, "Password Changed Successfully!"); 
-            
-            // Xóa trắng các ô sau khi đổi thành công
             txtOldPass.setText(""); 
             txtNewPass.setText(""); 
             txtConfirmPass.setText("");
@@ -66,19 +53,13 @@ public class SettingPanel extends javax.swing.JPanel {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE); 
         }
     }
-    
-    // --- LOGIC XÓA TÀI KHOẢN ---
     private void performDeleteAccount() {
         String password = new String(txtOldPass.getPassword());
-            
-        // Yêu cầu nhập mật khẩu cũ để xác thực trước khi xóa
         if (password.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please enter your 'Old Password' to confirm deletion.", "Security Check", JOptionPane.WARNING_MESSAGE);
             txtOldPass.requestFocus();
             return;
         }
-
-        // Hiện hộp thoại xác nhận (Yes/No)
         int confirm = JOptionPane.showConfirmDialog(this, 
             "Are you sure you want to delete your account?\nThis action CANNOT be undone!", 
             "Delete Account", 
@@ -92,8 +73,6 @@ public class SettingPanel extends javax.swing.JPanel {
                 svc.deleteOwnAccount(password);
 
                 JOptionPane.showMessageDialog(this, "Account Deleted. Goodbye!");
-                
-                // Đăng xuất và quay về màn hình Login
                 SessionManager.getInstance().logout();
                 Window win = SwingUtilities.getWindowAncestor(this);
                 if (win != null) win.dispose();
@@ -178,23 +157,23 @@ public class SettingPanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void txtNewPassActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNewPassActionPerformed
-        txtConfirmPass.requestFocus();// TODO add your handling code here:
+        txtConfirmPass.requestFocus();
     }//GEN-LAST:event_txtNewPassActionPerformed
 
     private void txtConfirmPassActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtConfirmPassActionPerformed
-        performChangePassword();// TODO add your handling code here:
+        performChangePassword();
     }//GEN-LAST:event_txtConfirmPassActionPerformed
 
     private void btnChangeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnChangeActionPerformed
-        performChangePassword();// TODO add your handling code here:
+        performChangePassword();
     }//GEN-LAST:event_btnChangeActionPerformed
 
     private void btnDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeleteActionPerformed
-        performDeleteAccount();// TODO add your handling code here:
+        performDeleteAccount();
     }//GEN-LAST:event_btnDeleteActionPerformed
 
     private void txtOldPassActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtOldPassActionPerformed
-        txtNewPass.requestFocus();// TODO add your handling code here:
+        txtNewPass.requestFocus();
     }//GEN-LAST:event_txtOldPassActionPerformed
 
 
